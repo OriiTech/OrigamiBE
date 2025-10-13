@@ -7,12 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Constants\" />
-    <Folder Include="Utils\" />
-    <Folder Include="Payload\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Origami.DataTier\Origami.DataTier.csproj" />
   </ItemGroup>
 
