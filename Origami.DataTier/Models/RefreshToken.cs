@@ -18,4 +18,6 @@ public partial class RefreshToken
     public DateTime? RevokedAt { get; set; }
 
     public bool IsActive { get; set; }
+
+    public virtual User User { get; set; } = null!;
 }

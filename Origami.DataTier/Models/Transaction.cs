@@ -15,6 +15,14 @@ public partial class Transaction
 
     public DateTime? CreatedAt { get; set; }
 
+    public string? TransactionType { get; set; }
+
+    public string? Status { get; set; }
+
+    public int? OrderId { get; set; }
+
+    public virtual Order? Order { get; set; }
+
     public virtual Wallet? ReceiverWallet { get; set; }
 
     public virtual Wallet? SenderWallet { get; set; }

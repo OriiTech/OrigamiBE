@@ -1,6 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
 namespace Origami.DataTier.Models;
 
@@ -45,7 +45,13 @@ public partial class OrigamiDbContext : DbContext
 
     public virtual DbSet<Notification> Notifications { get; set; }
 
+    public virtual DbSet<Order> Orders { get; set; }
+
+    public virtual DbSet<OrderItem> OrderItems { get; set; }
+
     public virtual DbSet<Question> Questions { get; set; }
+
+    public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
 
     public virtual DbSet<Revenue> Revenues { get; set; }
 
@@ -70,7 +76,6 @@ public partial class OrigamiDbContext : DbContext
     public virtual DbSet<Vote> Votes { get; set; }
 
     public virtual DbSet<Wallet> Wallets { get; set; }
-    public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -439,6 +444,68 @@ public partial class OrigamiDbContext : DbContext
                 .HasConstraintName("FK__Notificat__user___160F4887");
         });
 
+        modelBuilder.Entity<Order>(entity =>
+        {
+            entity.HasKey(e => e.OrderId).HasName("PK__Orders__46596229E2DAC65D");
+
+            entity.HasIndex(e => e.BuyerUserId, "IX_Orders_Buyer");
+
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.BuyerUserId).HasColumnName("buyer_user_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Currency)
+                .HasMaxLength(10)
+                .HasDefaultValue("VND")
+                .HasColumnName("currency");
+            entity.Property(e => e.Status)
+                .HasMaxLength(20)
+                .HasDefaultValue("pending")
+                .HasColumnName("status");
+            entity.Property(e => e.TotalAmount)
+                .HasColumnType("decimal(18, 2)")
+                .HasColumnName("total_amount");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
+
+            entity.HasOne(d => d.BuyerUser).WithMany(p => p.Orders)
+                .HasForeignKey(d => d.BuyerUserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Orders__buyer_us__5224328E");
+        });
+
+        modelBuilder.Entity<OrderItem>(entity =>
+        {
+            entity.HasKey(e => e.OrderItemId).HasName("PK__OrderIte__3764B6BCB975590F");
+
+            entity.ToTable("OrderItem");
+
+            entity.Property(e => e.OrderItemId).HasColumnName("order_item_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.ProductType)
+                .HasMaxLength(20)
+                .HasColumnName("product_type");
+            entity.Property(e => e.Quantity)
+                .HasDefaultValue(1)
+                .HasColumnName("quantity");
+            entity.Property(e => e.UnitPrice)
+                .HasColumnType("decimal(18, 2)")
+                .HasColumnName("unit_price");
+
+            entity.HasOne(d => d.Order).WithMany(p => p.OrderItems)
+                .HasForeignKey(d => d.OrderId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__OrderItem__order__56E8E7AB");
+        });
+
         modelBuilder.Entity<Question>(entity =>
         {
             entity.HasKey(e => e.QuestionId).HasName("PK__Question__2EC21549D431B879");
@@ -461,6 +528,34 @@ public partial class OrigamiDbContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.Questions)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("FK__Question__user_i__17F790F9");
+        });
+
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasKey(e => e.TokenId).HasName("PK__Refresh___CB3C9E17E7EF4440");
+
+            entity.ToTable("Refresh_token");
+
+            entity.Property(e => e.TokenId).HasColumnName("token_id");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.ExpiresAt)
+                .HasColumnType("datetime")
+                .HasColumnName("expires_at");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
+            entity.Property(e => e.RefreshToken1)
+                .HasMaxLength(512)
+                .HasColumnName("refresh_token");
+            entity.Property(e => e.RevokedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("revoked_at");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.User).WithMany(p => p.RefreshTokens)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_RefreshToken_User");
         });
 
         modelBuilder.Entity<Revenue>(entity =>
@@ -603,6 +698,8 @@ public partial class OrigamiDbContext : DbContext
 
             entity.ToTable("Transaction");
 
+            entity.HasIndex(e => e.OrderId, "IX_Transaction_OrderId");
+
             entity.Property(e => e.TransactionId).HasColumnName("transaction_id");
             entity.Property(e => e.Amount)
                 .HasColumnType("decimal(18, 2)")
@@ -611,8 +708,19 @@ public partial class OrigamiDbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
             entity.Property(e => e.ReceiverWalletId).HasColumnName("receiver_wallet_id");
             entity.Property(e => e.SenderWalletId).HasColumnName("sender_wallet_id");
+            entity.Property(e => e.Status)
+                .HasMaxLength(20)
+                .HasColumnName("status");
+            entity.Property(e => e.TransactionType)
+                .HasMaxLength(30)
+                .HasColumnName("transaction_type");
+
+            entity.HasOne(d => d.Order).WithMany(p => p.Transactions)
+                .HasForeignKey(d => d.OrderId)
+                .HasConstraintName("FK__Transacti__order__58D1301D");
 
             entity.HasOne(d => d.ReceiverWallet).WithMany(p => p.TransactionReceiverWallets)
                 .HasForeignKey(d => d.ReceiverWalletId)
@@ -723,28 +831,7 @@ public partial class OrigamiDbContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Wallet__user_id__2739D489");
         });
-        modelBuilder.Entity<RefreshToken>(entity =>
-        {
-            entity.HasKey(e => e.TokenId).HasName("PK__Refresh___CB3C9E17E7EF4440");
 
-            entity.ToTable("Refresh_token");
-
-            entity.Property(e => e.TokenId).HasColumnName("token_id");
-            entity.Property(e => e.CreatedAt)
-                .HasColumnType("datetime")
-                .HasColumnName("created_at");
-            entity.Property(e => e.ExpiresAt)
-                .HasColumnType("datetime")
-                .HasColumnName("expires_at");
-            entity.Property(e => e.IsActive).HasColumnName("is_active");
-            entity.Property(e => e.RefreshToken1)
-                .HasMaxLength(512)
-                .HasColumnName("refresh_token");
-            entity.Property(e => e.RevokedAt)
-                .HasColumnType("datetime")
-                .HasColumnName("revoked_at");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
-        });
         OnModelCreatingPartial(modelBuilder);
     }
 
