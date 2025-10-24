@@ -21,51 +21,63 @@ namespace Origami.API.Services.Interfaces
 
         public async Task<int> CreateNewUser(UserInfo request)
         {
-            User newUser = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(
-                predicate: x => x.Email.Equals(request.Email)
-                );
+            var repo = _unitOfWork.GetRepository<User>();
 
-            if (newUser != null) throw new BadHttpRequestException("UserExisted");
+            var existingUser = await repo.GetFirstOrDefaultAsync(
+                predicate: x => x.Email.ToLower() == request.Email.ToLower(),
+                asNoTracking: true
+            );
 
-            newUser = _mapper.Map<User>(request);
+            if (existingUser != null)
+                throw new BadHttpRequestException("UserExisted");
 
-            await _unitOfWork.GetRepository<User>().InsertAsync(newUser);
+            var newUser = _mapper.Map<User>(request);
 
-            bool isSuccessful = await _unitOfWork.CommitAsync() > 0;
-            if (!isSuccessful) throw new BadHttpRequestException("CreateFailed");
+            await repo.InsertAsync(newUser);
+
+            var isSuccessful = await _unitOfWork.CommitAsync() > 0;
+            if (!isSuccessful)
+                throw new BadHttpRequestException("CreateFailed");
 
             return newUser.UserId;
         }
 
         public async Task<GetUserResponse> GetUserById(int id)
         {
-            Func<IQueryable<User>, IIncludableQueryable<User, object>> include = q => q.Include(u => u.Role);
-            User user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(
-                predicate: x => x.UserId.Equals(id), include: include) ??
-                throw new BadHttpRequestException("UserNotFound");
-
-            GetUserResponse result = _mapper.Map<GetUserResponse>(user);
-            return result;
+            User user = await _unitOfWork.GetRepository<User>().GetFirstOrDefaultAsync(
+                predicate: x => x.UserId == id,
+                include: q => q.Include(u => u.Role),
+                asNoTracking: true
+            ) ?? throw new BadHttpRequestException("UserNotFound");
+            return _mapper.Map<GetUserResponse>(user);
         }
 
         public async Task<bool> UpdateUserInfo(int id, UserInfo request)
         {
-            User user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(
-                predicate: x => x.UserId.Equals(id)) ??
-                throw new BadHttpRequestException("UserNotFound");
+            var repo = _unitOfWork.GetRepository<User>();
+            var user = await repo.GetFirstOrDefaultAsync(
+            predicate: x => x.UserId == id,
+            asNoTracking: false
+            ) ?? throw new BadHttpRequestException("UserNotFound");
 
-            // Update other fields
-            user.Username = string.IsNullOrEmpty(request.Username) ? user.Username : request.Username;
-            user.Email = string.IsNullOrEmpty(request.Email) ? user.Email : request.Email;
-            user.UpdatedAt = DateTime.Now;
 
-            // Perform the update in the repository
-            _unitOfWork.GetRepository<User>().UpdateAsync(user);
+            // Update fields
+            if (!string.IsNullOrEmpty(request.Email) && request.Email != user.Email)
+            {
+                bool emailExists = await repo.AnyAsync(x => x.Email == request.Email);
+                if (emailExists)
+                    throw new BadHttpRequestException("EmailAlreadyUsed");
 
+                user.Email = request.Email;
+            }
+            if (!string.IsNullOrEmpty(request.Username))
+                user.Username = request.Username;
+
+            user.UpdatedAt = DateTime.UtcNow;
             // Commit the changes
-            bool isSuccesful = await _unitOfWork.CommitAsync() > 0;
+            bool isSuccessful = await _unitOfWork.CommitAsync() > 0;
 
-            return isSuccesful;
+            return isSuccessful;
         }
 
         public async Task<IPaginate<GetUserResponse>> ViewAllUser(UserFilter filter, PagingModel pagingModel)

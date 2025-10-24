@@ -9,22 +9,18 @@ namespace Origami.DataTier.Repository.Interfaces
         #region Get Async
         Task<IEnumerable<T>> FindAllAsync(Expression<Func<T, bool>> predicate);
         Task<T?> FindAsync(Expression<Func<T, bool>> predicate);
-        Task<T> AsQueryableAsync(
-            Expression<Func<T, bool>> predicate = null,
-            Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
-            Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null);
-
+        Task<TResult> GetFirstOrDefaultAsync<TResult>(
+         Expression<Func<T, TResult>> selector = null,
+         Expression<Func<T, bool>> predicate = null,
+         Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+         Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null,
+         bool asNoTracking = true);
+        Task<T> GetFirstOrDefaultAsync(
+        Expression<Func<T, bool>> predicate = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+        Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null,
+        bool asNoTracking = true);
         Task<bool> AnyAsync(Expression<Func<T, bool>> predicate);
-        Task<T> SingleOrDefaultAsync(
-            Expression<Func<T, bool>> predicate = null,
-            Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
-            Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null);
-
-        Task<TResult> SingleOrDefaultAsync<TResult>(
-            Expression<Func<T, TResult>> selector,
-            Expression<Func<T, bool>> predicate = null,
-            Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
-            Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null);
 
         Task<ICollection<T>> GetListAsync(
             Expression<Func<T, bool>> predicate = null,
@@ -65,14 +61,14 @@ namespace Origami.DataTier.Repository.Interfaces
 
         #region Update
 
-        void UpdateAsync(T entity);
+        void Update(T entity);
 
         void UpdateRange(IEnumerable<T> entities);
 
         #endregion
 
-        void DeleteAsync(T entity);
-        void DeleteRangeAsync(IEnumerable<T> entities);
+        void Delete(T entity);
+        void DeleteRange(IEnumerable<T> entities);
         Task<IEnumerable<T>> GetAllAsync();
     }
 }
