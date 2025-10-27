@@ -65,5 +65,27 @@ namespace Origami.API.Services.Interfaces
 
             return response;
         }
+
+        public async Task<bool> UpdateRoleInfo(int id, RoleInfo request)
+        {
+            var repo = _unitOfWork.GetRepository<Role>();
+            var role = await repo.GetFirstOrDefaultAsync(
+                predicate: x => x.RoleId == id,
+                asNoTracking: false
+            ) ?? throw new BadHttpRequestException("RoleNotFound");
+
+            if (!string.IsNullOrEmpty(request.RoleName) && request.RoleName != role.RoleName)
+            {
+                bool roleNameExists = await repo.AnyAsync(x => x.RoleName.ToLower() == request.RoleName.ToLower());
+                if (roleNameExists)
+                    throw new BadHttpRequestException("RoleNameAlreadyUsed");
+
+                role.RoleName = request.RoleName;
+            }
+
+            bool isSuccessful = await _unitOfWork.CommitAsync() > 0;
+
+            return isSuccessful;
+        }
     }
 }

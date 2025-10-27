@@ -39,5 +39,14 @@ namespace Origami.API.Controllers
             var response = await _roleService.CreateNewRole(request);
             return Ok(response);
         }
+
+        [HttpPatch(ApiEndPointConstant.Role.RoleEndPoint)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        public async Task<IActionResult> UpdateRoleInfo(int id, RoleInfo request)
+        {
+            var isSuccessful = await _roleService.UpdateRoleInfo(id, request);
+            if (!isSuccessful) return Ok("UpdateStatusFailed");
+            return Ok("UpdateStatusSuccess");
+        }
     }
 }

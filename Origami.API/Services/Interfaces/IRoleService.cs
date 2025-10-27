@@ -9,5 +9,6 @@ namespace Origami.API.Services.Interfaces
         Task<int> CreateNewRole(RoleInfo request);
         Task<IPaginate<GetRoleResponse>> ViewAllRoles(RoleFilter filter, PagingModel pagingModel);
         Task<GetRoleResponse> GetRoleById(int id);
+        Task<bool> UpdateRoleInfo(int id, RoleInfo request);
     }
 }
