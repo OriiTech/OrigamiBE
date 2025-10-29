@@ -48,5 +48,14 @@ namespace Origami.API.Controllers
             if (!isSuccessful) return Ok("UpdateStatusFailed");
             return Ok("UpdateStatusSuccess");
         }
+
+        [HttpDelete(ApiEndPointConstant.Role.RoleEndPoint)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        public async Task<IActionResult> DeleteRole(int id)
+        {
+            var isSuccessful = await _roleService.DeleteRoleById(id);
+            if (!isSuccessful) return Ok("DeleteStatusFailed");
+            return Ok("DeleteStatusSuccess");
+        }
     }
 }
