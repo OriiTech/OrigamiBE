@@ -87,5 +87,19 @@ namespace Origami.API.Services.Interfaces
 
             return isSuccessful;
         }
+
+        public async Task<bool> DeleteRoleById(int id)
+        {
+        var repo = _unitOfWork.GetRepository<Role>();
+        var role = await repo.GetFirstOrDefaultAsync(
+            predicate: x => x.RoleId == id,
+            asNoTracking: false
+        ) ?? throw new BadHttpRequestException("RoleNotFound");
+
+        repo.Delete(role);
+        bool isSuccessful = await _unitOfWork.CommitAsync() > 0;
+        return isSuccessful;
+
+        }
     }
 }
