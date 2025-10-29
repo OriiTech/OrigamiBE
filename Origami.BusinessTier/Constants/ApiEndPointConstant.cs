@@ -13,10 +13,19 @@ namespace Origami.BusinessTier.Constants
         public const string RootEndPoint = "/api";
         public const string ApiVersion = "/v1";
         public const string ApiEndpoint = RootEndPoint + ApiVersion;
+
+        //User
         public static class User
         {
             public const string UsersEndPoint = ApiEndpoint + "/users";
             public const string UserEndPoint = UsersEndPoint + "/{id}";
+        }
+
+        //Role
+        public static class Role
+        {
+            public const string RolesEndPoint = ApiEndpoint + "/roles";
+            public const string RoleEndPoint = RolesEndPoint + "/{id}";
         }
     }
     
