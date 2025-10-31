@@ -45,5 +45,17 @@ namespace Origami.API.Services.Interfaces
                 throw new BadHttpRequestException("CreateFailed");
             return newNotification.NotificationId;
         }
+
+        public async Task<bool> DeleteNotificationById(int id)
+        {
+            var repo = _unitOfWork.GetRepository<Notification>();
+            var notification = await repo.GetFirstOrDefaultAsync(predicate: x=>x.NotificationId==id,
+                asNoTracking:false)??throw new BadHttpRequestException("No Notification was found");
+            if (notification == null)
+                throw new BadHttpRequestException("NotificationNotFound");
+            repo.Delete(notification);
+            var isSuccessful = await _unitOfWork.CommitAsync() > 0;
+            return isSuccessful;
+        }
     }
 }

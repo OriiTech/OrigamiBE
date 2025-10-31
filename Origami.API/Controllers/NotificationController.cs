@@ -32,5 +32,15 @@ namespace Origami.API.Controllers
             var response = await _notificationService.CreateNewNotification(request);
             return Ok(response);
         }
+
+        //Delete notification by id
+        [HttpDelete(ApiEndPointConstant.Notification.NotificationEndPoint)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        public async Task<IActionResult> DeleteNotification(int id)
+        {
+            var isSuccessful = await _notificationService.DeleteNotificationById(id);
+            if (!isSuccessful) return Ok("DeleteStatusFailed");
+            return Ok("DeleteStatusSuccess");
+        }
     }
 }

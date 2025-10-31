@@ -10,5 +10,6 @@ namespace Origami.API.Services.Interfaces
     {
         Task<IPaginate<GetNotificationResponse>> ViewAllNotifications(NotificationFilter filter, PagingModel pagingModel);
         Task<int> CreateNewNotification(NotificationInfo request);
+        Task<bool> DeleteNotificationById(int id);
     }
 }
