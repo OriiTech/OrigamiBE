@@ -25,6 +25,8 @@ public partial class Guide
 
     public virtual ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
 
+    public virtual ICollection<GuideAccess> GuideAccesses { get; set; } = new List<GuideAccess>();
+
     public virtual ICollection<Revenue> Revenues { get; set; } = new List<Revenue>();
 
     public virtual ICollection<Step> Steps { get; set; } = new List<Step>();

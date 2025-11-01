@@ -33,11 +33,11 @@ public partial class OrigamiDbContext : DbContext
 
     public virtual DbSet<CourseReview> CourseReviews { get; set; }
 
-    public virtual DbSet<EventParticipant> EventParticipants { get; set; }
-
     public virtual DbSet<Favorite> Favorites { get; set; }
 
     public virtual DbSet<Guide> Guides { get; set; }
+
+    public virtual DbSet<GuideAccess> GuideAccesses { get; set; }
 
     public virtual DbSet<Leaderboard> Leaderboards { get; set; }
 
@@ -57,11 +57,15 @@ public partial class OrigamiDbContext : DbContext
 
     public virtual DbSet<Role> Roles { get; set; }
 
+    public virtual DbSet<Score> Scores { get; set; }
+
     public virtual DbSet<Step> Steps { get; set; }
 
     public virtual DbSet<Submission> Submissions { get; set; }
 
     public virtual DbSet<Team> Teams { get; set; }
+
+    public virtual DbSet<TeamMember> TeamMembers { get; set; }
 
     public virtual DbSet<Ticket> Tickets { get; set; }
 
@@ -79,7 +83,7 @@ public partial class OrigamiDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=.;Database=OrigamiDB;User Id=sa;Password=12345;TrustServerCertificate=True;");
+        => optionsBuilder.UseSqlServer("Server=.;Database=OrigamiDB;User Id=sa;Password=1;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -142,24 +146,38 @@ public partial class OrigamiDbContext : DbContext
 
         modelBuilder.Entity<Challenge>(entity =>
         {
-            entity.HasKey(e => e.ChallengeId).HasName("PK__Challeng__CF635191973DA797");
+            entity.HasKey(e => e.ChallengeId).HasName("PK__Challeng__CF6351910EBBD5CA");
 
             entity.ToTable("Challenge");
 
             entity.Property(e => e.ChallengeId).HasColumnName("challenge_id");
             entity.Property(e => e.ChallengeType)
-                .HasMaxLength(50)
+                .HasMaxLength(100)
                 .HasColumnName("challenge_type");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.EndDate)
                 .HasColumnType("datetime")
                 .HasColumnName("end_date");
+            entity.Property(e => e.IsTeamBased)
+                .HasDefaultValue(true)
+                .HasColumnName("is_team_based");
+            entity.Property(e => e.MaxTeamSize).HasColumnName("max_team_size");
             entity.Property(e => e.StartDate)
                 .HasColumnType("datetime")
                 .HasColumnName("start_date");
             entity.Property(e => e.Title)
                 .HasMaxLength(255)
                 .HasColumnName("title");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Challenges)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK_Challenge_User");
         });
 
         modelBuilder.Entity<Comment>(entity =>
@@ -274,34 +292,6 @@ public partial class OrigamiDbContext : DbContext
                 .HasConstraintName("FK__Course_re__user___09A971A2");
         });
 
-        modelBuilder.Entity<EventParticipant>(entity =>
-        {
-            entity.HasKey(e => e.ParticipantId).HasName("PK__Event_pa__4E03780697BE4361");
-
-            entity.ToTable("Event_participant");
-
-            entity.Property(e => e.ParticipantId).HasColumnName("participant_id");
-            entity.Property(e => e.ChallengeId).HasColumnName("challenge_id");
-            entity.Property(e => e.JoinedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("joined_at");
-            entity.Property(e => e.TeamId).HasColumnName("team_id");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
-
-            entity.HasOne(d => d.Challenge).WithMany(p => p.EventParticipants)
-                .HasForeignKey(d => d.ChallengeId)
-                .HasConstraintName("FK__Event_par__chall__0A9D95DB");
-
-            entity.HasOne(d => d.Team).WithMany(p => p.EventParticipants)
-                .HasForeignKey(d => d.TeamId)
-                .HasConstraintName("FK__Event_par__team___0B91BA14");
-
-            entity.HasOne(d => d.User).WithMany(p => p.EventParticipants)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__Event_par__user___0C85DE4D");
-        });
-
         modelBuilder.Entity<Favorite>(entity =>
         {
             entity.HasKey(e => e.FavoriteId).HasName("PK__Favorite__46ACF4CB4B707C8A");
@@ -369,32 +359,65 @@ public partial class OrigamiDbContext : DbContext
                     j =>
                     {
                         j.HasKey("GuideId", "CategoryId").HasName("PK__Guide_ca__59FCCCDAE02EC207");
-                        j.ToTable("Guide_category");
+                        j.ToTable("GuideCategory");
                         j.IndexerProperty<int>("GuideId").HasColumnName("guide_id");
                         j.IndexerProperty<int>("CategoryId").HasColumnName("category_id");
                     });
         });
 
+        modelBuilder.Entity<GuideAccess>(entity =>
+        {
+            entity.HasKey(e => e.AccessId).HasName("PK__GuideAcc__10FA1E2087C9A4C9");
+
+            entity.ToTable("GuideAccess");
+
+            entity.HasIndex(e => new { e.UserId, e.GuideId }, "UQ_User_Guide").IsUnique();
+
+            entity.Property(e => e.AccessId).HasColumnName("access_id");
+            entity.Property(e => e.GrantedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("granted_at");
+            entity.Property(e => e.GuideId).HasColumnName("guide_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.Guide).WithMany(p => p.GuideAccesses)
+                .HasForeignKey(d => d.GuideId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GuideAccess_Guide");
+
+            entity.HasOne(d => d.User).WithMany(p => p.GuideAccesses)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GuideAccess_User");
+        });
+
         modelBuilder.Entity<Leaderboard>(entity =>
         {
-            entity.HasKey(e => e.LeaderboardId).HasName("PK__Leaderbo__720024AEAC00DB2D");
+            entity.HasKey(e => e.LeaderboardId).HasName("PK__Leaderbo__B358A1E650493078");
 
             entity.ToTable("Leaderboard");
 
-            entity.Property(e => e.LeaderboardId).HasColumnName("leaderboard_id");
-            entity.Property(e => e.ChallengeId).HasColumnName("challenge_id");
-            entity.Property(e => e.ParticipantId).HasColumnName("participant_id");
-            entity.Property(e => e.Score)
-                .HasColumnType("decimal(10, 2)")
-                .HasColumnName("score");
+            entity.Property(e => e.LeaderboardId).HasColumnName("LeaderboardID");
+            entity.Property(e => e.ChallengeId).HasColumnName("ChallengeID");
+            entity.Property(e => e.TeamId).HasColumnName("TeamID");
+            entity.Property(e => e.TotalScore).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.UserId).HasColumnName("UserID");
 
             entity.HasOne(d => d.Challenge).WithMany(p => p.Leaderboards)
                 .HasForeignKey(d => d.ChallengeId)
-                .HasConstraintName("FK__Leaderboa__chall__123EB7A3");
+                .HasConstraintName("FK_Leaderboard_Challenge");
 
-            entity.HasOne(d => d.Participant).WithMany(p => p.Leaderboards)
-                .HasForeignKey(d => d.ParticipantId)
-                .HasConstraintName("FK__Leaderboa__parti__1332DBDC");
+            entity.HasOne(d => d.Team).WithMany(p => p.Leaderboards)
+                .HasForeignKey(d => d.TeamId)
+                .HasConstraintName("FK_Leaderboard_Team");
+
+            entity.HasOne(d => d.User).WithMany(p => p.Leaderboards)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK_Leaderboard_User");
         });
 
         modelBuilder.Entity<Lesson>(entity =>
@@ -601,14 +624,52 @@ public partial class OrigamiDbContext : DbContext
                 .HasColumnName("role_name");
         });
 
+        modelBuilder.Entity<Score>(entity =>
+        {
+            entity.HasKey(e => e.ScoreId).HasName("PK__Score__7DD229F1AA01F393");
+
+            entity.ToTable("Score");
+
+            entity.Property(e => e.ScoreId).HasColumnName("ScoreID");
+            entity.Property(e => e.Score1)
+                .HasColumnType("decimal(5, 2)")
+                .HasColumnName("Score");
+            entity.Property(e => e.ScoreAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.SubmissionId).HasColumnName("SubmissionID");
+
+            entity.HasOne(d => d.ScoreByNavigation).WithMany(p => p.Scores)
+                .HasForeignKey(d => d.ScoreBy)
+                .HasConstraintName("FK_Score_User");
+        });
+
         modelBuilder.Entity<Step>(entity =>
         {
             entity.HasKey(e => e.StepId).HasName("PK__Steps__B2E1DE81D499DE8F");
 
+            entity.ToTable("Step");
+
             entity.Property(e => e.StepId).HasColumnName("step_id");
-            entity.Property(e => e.Content).HasColumnName("content");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.GuideId).HasColumnName("guide_id");
+            entity.Property(e => e.ImageUrl)
+                .HasMaxLength(255)
+                .HasColumnName("image_url");
             entity.Property(e => e.StepNumber).HasColumnName("step_number");
+            entity.Property(e => e.Title)
+                .HasMaxLength(255)
+                .HasColumnName("title");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.VideoUrl)
+                .HasMaxLength(255)
+                .HasColumnName("video_url");
 
             entity.HasOne(d => d.Guide).WithMany(p => p.Steps)
                 .HasForeignKey(d => d.GuideId)
@@ -618,40 +679,71 @@ public partial class OrigamiDbContext : DbContext
 
         modelBuilder.Entity<Submission>(entity =>
         {
-            entity.HasKey(e => e.SubmissionId).HasName("PK__Submissi__9B5355951E7C34CB");
+            entity.HasKey(e => e.SubmissionId).HasName("PK__Submissi__449EE105DAD96CD1");
 
             entity.ToTable("Submission");
 
-            entity.Property(e => e.SubmissionId).HasColumnName("submission_id");
-            entity.Property(e => e.ChallengeId).HasColumnName("challenge_id");
-            entity.Property(e => e.CreatedAt)
+            entity.Property(e => e.SubmissionId).HasColumnName("SubmissionID");
+            entity.Property(e => e.ChallengeId).HasColumnName("ChallengeID");
+            entity.Property(e => e.FileUrl).HasMaxLength(500);
+            entity.Property(e => e.SubmittedAt)
                 .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("created_at");
-            entity.Property(e => e.ParticipantId).HasColumnName("participant_id");
-            entity.Property(e => e.SubmissionLink)
-                .HasMaxLength(255)
-                .HasColumnName("submission_link");
+                .HasColumnType("datetime");
+            entity.Property(e => e.TeamId).HasColumnName("TeamID");
 
             entity.HasOne(d => d.Challenge).WithMany(p => p.Submissions)
                 .HasForeignKey(d => d.ChallengeId)
-                .HasConstraintName("FK__Submissio__chall__1CBC4616");
+                .HasConstraintName("FK_Submission_Challenge");
 
-            entity.HasOne(d => d.Participant).WithMany(p => p.Submissions)
-                .HasForeignKey(d => d.ParticipantId)
-                .HasConstraintName("FK__Submissio__parti__1DB06A4F");
+            entity.HasOne(d => d.SubmittedByNavigation).WithMany(p => p.Submissions)
+                .HasForeignKey(d => d.SubmittedBy)
+                .HasConstraintName("FK_Submission_User");
+
+            entity.HasOne(d => d.Team).WithMany(p => p.Submissions)
+                .HasForeignKey(d => d.TeamId)
+                .HasConstraintName("FK_Submission_Team");
         });
 
         modelBuilder.Entity<Team>(entity =>
         {
-            entity.HasKey(e => e.TeamId).HasName("PK__Team__F82DEDBCA3193D76");
+            entity.HasKey(e => e.TeamId).HasName("PK__Team__123AE7B91E7AA665");
 
             entity.ToTable("Team");
 
-            entity.Property(e => e.TeamId).HasColumnName("team_id");
-            entity.Property(e => e.TeamName)
-                .HasMaxLength(100)
-                .HasColumnName("team_name");
+            entity.Property(e => e.TeamId).HasColumnName("TeamID");
+            entity.Property(e => e.ChallengeId).HasColumnName("ChallengeID");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.TeamName).HasMaxLength(255);
+
+            entity.HasOne(d => d.Challenge).WithMany(p => p.Teams)
+                .HasForeignKey(d => d.ChallengeId)
+                .HasConstraintName("FK_Team_Challenge");
+        });
+
+        modelBuilder.Entity<TeamMember>(entity =>
+        {
+            entity.HasKey(e => e.TeamMemberId).HasName("PK__TeamMemb__C7C09285ED6982A2");
+
+            entity.ToTable("TeamMember");
+
+            entity.HasIndex(e => new { e.TeamId, e.UserId }, "UQ_TeamMember").IsUnique();
+
+            entity.Property(e => e.TeamMemberId).HasColumnName("TeamMemberID");
+            entity.Property(e => e.JoinedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.TeamId).HasColumnName("TeamID");
+            entity.Property(e => e.UserId).HasColumnName("UserID");
+
+            entity.HasOne(d => d.Team).WithMany(p => p.TeamMembers)
+                .HasForeignKey(d => d.TeamId)
+                .HasConstraintName("FK_TeamMember_Team");
+
+            entity.HasOne(d => d.User).WithMany(p => p.TeamMembers)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK_TeamMember_User");
         });
 
         modelBuilder.Entity<Ticket>(entity =>
@@ -789,9 +881,11 @@ public partial class OrigamiDbContext : DbContext
 
         modelBuilder.Entity<Vote>(entity =>
         {
-            entity.HasKey(e => e.VoteId).HasName("PK__Vote__9F5405AEA6435A2A");
+            entity.HasKey(e => e.VoteId).HasName("PK__Vote__9F5405AE055254B3");
 
             entity.ToTable("Vote");
+
+            entity.HasIndex(e => new { e.SubmissionId, e.UserId }, "UQ_Vote").IsUnique();
 
             entity.Property(e => e.VoteId).HasColumnName("vote_id");
             entity.Property(e => e.SubmissionId).HasColumnName("submission_id");
@@ -803,11 +897,12 @@ public partial class OrigamiDbContext : DbContext
 
             entity.HasOne(d => d.Submission).WithMany(p => p.Votes)
                 .HasForeignKey(d => d.SubmissionId)
-                .HasConstraintName("FK__Vote__submission__25518C17");
+                .HasConstraintName("FK_Vote_Submission");
 
             entity.HasOne(d => d.User).WithMany(p => p.Votes)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__Vote__user_id__2645B050");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Vote_User");
         });
 
         modelBuilder.Entity<Wallet>(entity =>
@@ -821,6 +916,10 @@ public partial class OrigamiDbContext : DbContext
                 .HasDefaultValue(0m)
                 .HasColumnType("decimal(18, 2)")
                 .HasColumnName("balance");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("datetime")
                 .HasColumnName("updated_at");

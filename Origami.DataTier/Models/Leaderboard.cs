@@ -7,13 +7,21 @@ public partial class Leaderboard
 {
     public int LeaderboardId { get; set; }
 
-    public int? ChallengeId { get; set; }
+    public int ChallengeId { get; set; }
 
-    public int? ParticipantId { get; set; }
+    public int? TeamId { get; set; }
 
-    public decimal? Score { get; set; }
+    public int? UserId { get; set; }
 
-    public virtual Challenge? Challenge { get; set; }
+    public decimal TotalScore { get; set; }
 
-    public virtual EventParticipant? Participant { get; set; }
+    public int? Rank { get; set; }
+
+    public DateTime UpdatedAt { get; set; }
+
+    public virtual Challenge Challenge { get; set; } = null!;
+
+    public virtual Team? Team { get; set; }
+
+    public virtual User? User { get; set; }
 }

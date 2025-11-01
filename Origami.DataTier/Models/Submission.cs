@@ -7,17 +7,21 @@ public partial class Submission
 {
     public int SubmissionId { get; set; }
 
-    public int? ChallengeId { get; set; }
+    public int ChallengeId { get; set; }
 
-    public int? ParticipantId { get; set; }
+    public int? TeamId { get; set; }
 
-    public string? SubmissionLink { get; set; }
+    public int SubmittedBy { get; set; }
 
-    public DateTime? CreatedAt { get; set; }
+    public string? FileUrl { get; set; }
 
-    public virtual Challenge? Challenge { get; set; }
+    public DateTime? SubmittedAt { get; set; }
 
-    public virtual EventParticipant? Participant { get; set; }
+    public virtual Challenge Challenge { get; set; } = null!;
+
+    public virtual User SubmittedByNavigation { get; set; } = null!;
+
+    public virtual Team? Team { get; set; }
 
     public virtual ICollection<Vote> Votes { get; set; } = new List<Vote>();
 }
