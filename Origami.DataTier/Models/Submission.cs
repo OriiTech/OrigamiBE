@@ -19,6 +19,8 @@ public partial class Submission
 
     public virtual Challenge Challenge { get; set; } = null!;
 
+    public virtual ICollection<Score> Scores { get; set; } = new List<Score>();
+
     public virtual User SubmittedByNavigation { get; set; } = null!;
 
     public virtual Team? Team { get; set; }

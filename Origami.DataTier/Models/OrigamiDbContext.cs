@@ -641,7 +641,13 @@ public partial class OrigamiDbContext : DbContext
 
             entity.HasOne(d => d.ScoreByNavigation).WithMany(p => p.Scores)
                 .HasForeignKey(d => d.ScoreBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Score_User");
+
+            entity.HasOne(d => d.Submission).WithMany(p => p.Scores)
+                .HasForeignKey(d => d.SubmissionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Score_Submission");
         });
 
         modelBuilder.Entity<Step>(entity =>

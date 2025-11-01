@@ -16,4 +16,6 @@ public partial class Score
     public int ScoreBy { get; set; }
 
     public virtual User ScoreByNavigation { get; set; } = null!;
+
+    public virtual Submission Submission { get; set; } = null!;
 }
