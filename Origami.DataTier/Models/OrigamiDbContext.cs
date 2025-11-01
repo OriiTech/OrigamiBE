@@ -49,6 +49,8 @@ public partial class OrigamiDbContext : DbContext
 
     public virtual DbSet<OrderItem> OrderItems { get; set; }
 
+    public virtual DbSet<Origami> Origamis { get; set; }
+
     public virtual DbSet<Question> Questions { get; set; }
 
     public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
@@ -330,6 +332,7 @@ public partial class OrigamiDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.OrigamiId).HasColumnName("OrigamiID");
             entity.Property(e => e.Price)
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("price");
@@ -344,6 +347,11 @@ public partial class OrigamiDbContext : DbContext
                 .HasForeignKey(d => d.AuthorId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Guide__author_id__0F624AF8");
+
+            entity.HasOne(d => d.Origami).WithMany(p => p.Guides)
+                .HasForeignKey(d => d.OrigamiId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK_Guide_Origami");
 
             entity.HasMany(d => d.Categories).WithMany(p => p.Guides)
                 .UsingEntity<Dictionary<string, object>>(
@@ -527,6 +535,25 @@ public partial class OrigamiDbContext : DbContext
                 .HasForeignKey(d => d.OrderId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__OrderItem__order__56E8E7AB");
+        });
+
+        modelBuilder.Entity<Origami>(entity =>
+        {
+            entity.HasKey(e => e.OrigamiId).HasName("PK__Origami__500FAC08CA4F3CED");
+
+            entity.ToTable("Origami");
+
+            entity.Property(e => e.OrigamiId).HasColumnName("OrigamiID");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.ImageUrl).HasMaxLength(500);
+            entity.Property(e => e.Name).HasMaxLength(255);
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Origamis)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Origami_User");
         });
 
         modelBuilder.Entity<Question>(entity =>
