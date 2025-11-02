@@ -41,6 +41,7 @@ namespace Origami.API.Extensions
             services.AddScoped<ILessonService, LessonService>();
             services.AddScoped<IQuestionService, QuestionService>();
             services.AddScoped<IAnswerService, AnswerService>();
+            services.AddScoped<ICourseAccessService, CourseAccessService>();
             return services;
         }
         public static IServiceCollection AddJwtValidation(this IServiceCollection services)
