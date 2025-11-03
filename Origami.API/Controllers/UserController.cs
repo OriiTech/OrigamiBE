@@ -31,7 +31,6 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
-
         [HttpPatch(ApiEndPointConstant.User.UserEndPoint)]
         [ProducesResponseType(typeof(GetUserResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateUserInfo(int id, UserInfo request)
