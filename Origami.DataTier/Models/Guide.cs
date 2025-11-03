@@ -19,11 +19,17 @@ public partial class Guide
 
     public DateTime? UpdatedAt { get; set; }
 
+    public int? OrigamiId { get; set; }
+
     public virtual User Author { get; set; } = null!;
 
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
 
     public virtual ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
+
+    public virtual ICollection<GuideAccess> GuideAccesses { get; set; } = new List<GuideAccess>();
+
+    public virtual Origami? Origami { get; set; }
 
     public virtual ICollection<Revenue> Revenues { get; set; } = new List<Revenue>();
 

@@ -28,6 +28,13 @@ namespace Origami.BusinessTier.Constants
             public const string RoleEndPoint = RolesEndPoint + "/{id}";
         }
 
+        //Notification
+        public static class Notification
+        {
+            public const string NotificationsEndPoint = ApiEndpoint + "/notifications";
+            public const string NotificationEndPoint = NotificationsEndPoint + "/{id}";
+        }
+
         //Course
         public static class Course
         {

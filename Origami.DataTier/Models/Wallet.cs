@@ -13,6 +13,8 @@ public partial class Wallet
 
     public DateTime? UpdatedAt { get; set; }
 
+    public DateTime? CreatedAt { get; set; }
+
     public virtual ICollection<Transaction> TransactionReceiverWallets { get; set; } = new List<Transaction>();
 
     public virtual ICollection<Transaction> TransactionSenderWallets { get; set; } = new List<Transaction>();
