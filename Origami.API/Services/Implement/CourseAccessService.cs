@@ -23,8 +23,6 @@ namespace Origami.API.Services.Interfaces
         public async Task<int> CreateNewCourseAccess(CourseAccessInfo request)
         {
             var repo = _unitOfWork.GetRepository<CourseAccess>();
-
-            // Kiểm tra CourseId có tồn tại không
             if (request.CourseId.HasValue)
             {
                 var courseRepo = _unitOfWork.GetRepository<Course>();
@@ -36,7 +34,6 @@ namespace Origami.API.Services.Interfaces
                     throw new BadHttpRequestException("CourseNotFound");
             }
 
-            // Kiểm tra LearnerId có tồn tại không
             if (request.LearnerId.HasValue)
             {
                 var userRepo = _unitOfWork.GetRepository<User>();
@@ -48,7 +45,6 @@ namespace Origami.API.Services.Interfaces
                     throw new BadHttpRequestException("LearnerNotFound");
             }
 
-            // Kiểm tra xem Learner đã có access vào Course này chưa
             bool alreadyExists = await repo.AnyAsync(
                 x => x.CourseId == request.CourseId && x.LearnerId == request.LearnerId
             );
