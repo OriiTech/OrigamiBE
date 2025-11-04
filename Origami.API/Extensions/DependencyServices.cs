@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Origami.API.Services.Implement;
 using Origami.API.Services.Interfaces;
 using Origami.DataTier.Models;
 using Origami.DataTier.Repository.Implement;
@@ -43,6 +44,8 @@ namespace Origami.API.Extensions
             services.AddScoped<IAnswerService, AnswerService>();
             services.AddScoped<ICourseAccessService, CourseAccessService>();
             services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<IOrigamiService, OrigamiService>();
+
             return services;
         }
         public static IServiceCollection AddJwtValidation(this IServiceCollection services)

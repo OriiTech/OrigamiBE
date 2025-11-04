@@ -18,7 +18,7 @@ namespace Origami.API.Services.Interfaces
         {
             _configuration = configuration;
         }
-
+        //chưa hash password
         public async Task<int> CreateNewUser(UserInfo request)
         {
             var repo = _unitOfWork.GetRepository<User>();
