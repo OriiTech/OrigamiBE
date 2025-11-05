@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity.Data;
 using Origami.BusinessTier.Payload.User;
 using Origami.DataTier.Models;
+using RegisterRequest = Origami.BusinessTier.Payload.User.RegisterRequest;
 
 namespace Origami.API.Mappers
 {
