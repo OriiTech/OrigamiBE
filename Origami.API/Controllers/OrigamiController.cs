@@ -30,6 +30,14 @@ namespace Origami.API.Controllers
             var response = await _origamiService.ViewAllOrigami(filter, pagingModel);
             return Ok(response);
         }
+        [HttpPost(ApiEndPointConstant.Origami.OrigamisEndPoint)]
+        [ProducesResponseType(typeof(int), StatusCodes.Status201Created)]
+        public async Task<IActionResult> CreateOrigami([FromBody] OrigamiInfo request)
+        {
+            var id = await _origamiService.CreateNewOrigami(request);
+            request.CreatedBy = CurrentUserId;
+            return CreatedAtAction(nameof(GetOrigami), new { id }, new { id });
+        }
 
         [HttpPatch(ApiEndPointConstant.Origami.OrigamiEndPoint)]
         [ProducesResponseType(typeof(GetOrigamiResponse), StatusCodes.Status200OK)]

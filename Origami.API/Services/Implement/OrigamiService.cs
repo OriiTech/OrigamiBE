@@ -32,6 +32,7 @@ namespace Origami.API.Services.Implement
                 throw new BadHttpRequestException("OrigamiExisted");
 
             var newOrigami = _mapper.Map<DataTier.Models.Origami>(request);
+            newOrigami.CreatedAt = DateTime.UtcNow;
 
             await repo.InsertAsync(newOrigami);
 

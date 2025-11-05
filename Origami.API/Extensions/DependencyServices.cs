@@ -45,6 +45,8 @@ namespace Origami.API.Extensions
             services.AddScoped<ICourseAccessService, CourseAccessService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IOrigamiService, OrigamiService>();
+            services.AddScoped<IGuideService, GuideService>();
+
 
             return services;
         }
