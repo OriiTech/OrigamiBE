@@ -82,5 +82,14 @@ namespace Origami.BusinessTier.Constants
             public const string GuidesEndPoint = ApiEndpoint + "/guides";
             public const string GuideEndPoint = GuidesEndPoint + "/{id}";
         }
+
+        //Auth
+        public static class Auth
+        {
+            public const string Login = ApiEndpoint + "/auth/login";
+            public const string Refresh = ApiEndpoint + "/auth/refresh";
+            public const string Logout = ApiEndpoint + "/auth/logout";
+            public const string HashPassword = ApiEndpoint + "/auth/hash";
+        }
     }
 }
