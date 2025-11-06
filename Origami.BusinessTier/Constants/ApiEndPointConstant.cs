@@ -90,6 +90,11 @@ namespace Origami.BusinessTier.Constants
             public const string Refresh = ApiEndpoint + "/auth/refresh";
             public const string Logout = ApiEndpoint + "/auth/logout";
             public const string HashPassword = ApiEndpoint + "/auth/hash";
+        //Step
+        public static class Step
+        {
+            public const string StepsEndPoint = ApiEndpoint + "/steps";
+            public const string StepEndPoint = StepsEndPoint + "/{id}";
         }
     }
 }

@@ -46,6 +46,7 @@ namespace Origami.API.Extensions
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IOrigamiService, OrigamiService>();
             services.AddScoped<IGuideService, GuideService>();
+            services.AddScoped<IStepService,StepService>();
 
 
             services.AddScoped<IAuthService, AuthService>();
