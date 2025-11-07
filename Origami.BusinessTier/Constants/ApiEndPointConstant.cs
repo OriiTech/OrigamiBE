@@ -97,5 +97,11 @@ namespace Origami.BusinessTier.Constants
             public const string StepsEndPoint = ApiEndpoint + "/steps";
             public const string StepEndPoint = StepsEndPoint + "/{id}";
         }
+        //Favorite
+        public static class Favorite
+        {
+            public const string FavoritesEndPoint = ApiEndpoint + "/favorites";
+            public const string FavoriteEndPoint = FavoritesEndPoint + "/{id}";
+        }
     }
 }
