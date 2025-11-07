@@ -206,6 +206,12 @@ public partial class OrigamiDbContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Comment__user_id__03F0984C");
+                entity.HasKey(e => e.CommentId);
+
+            entity.HasOne(d => d.ParentComment)
+                .WithMany(p => p.Replies)
+                .HasForeignKey(d => d.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Commission>(entity =>
