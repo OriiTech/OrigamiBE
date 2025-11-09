@@ -14,5 +14,6 @@ namespace Origami.BusinessTier.Payload.Guide
         public int AuthorId { get; set; }
         public int? OrigamiId { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public List<int>? CategoryIds { get; set; } = new();
     }
 }
