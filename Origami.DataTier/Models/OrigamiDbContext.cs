@@ -800,6 +800,7 @@ public partial class OrigamiDbContext : DbContext
                 .HasMaxLength(20)
                 .HasColumnName("status");
             entity.Property(e => e.TicketTypeId).HasColumnName("ticket_type_id");
+            entity.Property(e => e.Title).HasMaxLength(255);
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
             entity.HasOne(d => d.TicketType).WithMany(p => p.Tickets)

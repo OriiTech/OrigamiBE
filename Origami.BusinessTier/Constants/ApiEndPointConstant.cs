@@ -115,5 +115,17 @@ namespace Origami.BusinessTier.Constants
             public const string CommentsEndPoint = ApiEndpoint + "/comments";
             public const string CommentEndPoint = CommentsEndPoint + "/{id}";
         }
+        //TicketType
+        public static class TicketType
+        {
+            public const string TicketTypesEndPoint = ApiEndpoint + "/ticket-types";
+            public const string TicketTypeEndPoint = TicketTypesEndPoint + "/{id}";
+        }
+        //Ticket
+        public static class Ticket
+        {
+            public const string TicketsEndPoint = ApiEndpoint + "/tickets";
+            public const string TicketEndPoint = TicketsEndPoint + "/{id}";
+        }
     }
 }
