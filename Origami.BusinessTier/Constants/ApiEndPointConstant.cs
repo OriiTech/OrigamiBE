@@ -97,12 +97,22 @@ namespace Origami.BusinessTier.Constants
             public const string StepsEndPoint = ApiEndpoint + "/steps";
             public const string StepEndPoint = StepsEndPoint + "/{id}";
         }
-
         //Challenge
         public static class Challenge
         {
             public const string ChallengesEndPoint = ApiEndpoint + "/challenges";
             public const string ChallengeEndPoint = ChallengesEndPoint + "/{id}";
+        //Favorite
+        public static class Favorite
+        {
+            public const string FavoritesEndPoint = ApiEndpoint + "/favorites";
+            public const string FavoriteEndPoint = FavoritesEndPoint + "/{id}";
+        }
+        //Comment
+        public static class Comment
+        {
+            public const string CommentsEndPoint = ApiEndpoint + "/comments";
+            public const string CommentEndPoint = CommentsEndPoint + "/{id}";
         }
     }
 }

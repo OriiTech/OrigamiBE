@@ -50,6 +50,10 @@ namespace Origami.API.Extensions
             services.AddScoped<IChallengeService, ChallengeService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IPasswordHashService, PasswordHashService>();
+            services.AddScoped<IFavoriteService, FavoriteService>();
+            services.AddScoped<ICommentService, CommentService>();
+
+
             return services;
         }
         public static IServiceCollection AddJwtValidation(this IServiceCollection services)

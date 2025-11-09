@@ -15,7 +15,11 @@ public partial class Comment
 
     public DateTime? CreatedAt { get; set; }
 
+    public int? ParentId { get; set; }
+
     public virtual Guide Guide { get; set; } = null!;
 
     public virtual User User { get; set; } = null!;
+    public virtual Comment? ParentComment { get; set; }
+    public virtual ICollection<Comment> Replies { get; set; } = new List<Comment>();
 }
