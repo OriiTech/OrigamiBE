@@ -91,5 +91,12 @@ namespace Origami.BusinessTier.Constants
             public const string Logout = ApiEndpoint + "/auth/logout";
             public const string HashPassword = ApiEndpoint + "/auth/hash";
         }
+
+        //Challenge
+        public static class Challenge
+        {
+            public const string ChallengesEndPoint = ApiEndpoint + "/challenges";
+            public const string ChallengeEndPoint = ChallengesEndPoint + "/{id}";
+        }
     }
 }
