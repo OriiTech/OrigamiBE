@@ -52,7 +52,8 @@ namespace Origami.API.Extensions
             services.AddScoped<IPasswordHashService, PasswordHashService>();
             services.AddScoped<IFavoriteService, FavoriteService>();
             services.AddScoped<ICommentService, CommentService>();
-
+            services.AddScoped<ITeamService, TeamService>();
+            services.AddScoped<ITeamMemberService, TeamMemberService>();
 
             return services;
         }
