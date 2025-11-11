@@ -54,6 +54,11 @@ namespace Origami.API.Extensions
             services.AddScoped<ICommentService, CommentService>();
             services.AddScoped<ITeamService, TeamService>();
             services.AddScoped<ITeamMemberService, TeamMemberService>();
+            services.AddScoped<ISubmissionService, SubmissionService>();
+            services.AddScoped<IVoteService, VoteService>();
+            services.AddScoped<IScoreService, ScoreService>();
+            services.AddScoped<ILeaderboardService, LeaderboardService>();
+            services.AddScoped<ICourseReviewService, CourseReviewService>();
 
             return services;
         }

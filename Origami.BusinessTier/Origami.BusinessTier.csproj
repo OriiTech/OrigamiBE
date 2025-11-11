@@ -10,8 +10,4 @@
     <ProjectReference Include="..\Origami.DataTier\Origami.DataTier.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Payload\TeamMember\" />
-  </ItemGroup>
-
 </Project>
