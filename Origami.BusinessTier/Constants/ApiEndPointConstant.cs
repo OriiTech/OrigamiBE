@@ -115,5 +115,54 @@ namespace Origami.BusinessTier.Constants
             public const string CommentsEndPoint = ApiEndpoint + "/comments";
             public const string CommentEndPoint = CommentsEndPoint + "/{id}";
         }
+
+        //Team
+        public static class Team
+        {
+            public const string TeamsEndPoint = ApiEndpoint + "/teams";
+            public const string TeamEndPoint = TeamsEndPoint + "/{id}";
+        }
+
+        //TeamMember
+        public static class TeamMember
+        {
+            public const string TeamMembersEndPoint = ApiEndpoint + "/team-members";
+            public const string TeamMemberEndPoint = TeamMembersEndPoint + "/{id}";
+        }
+
+        //Vote
+        public static class Vote
+        {
+            public const string VotesEndPoint = ApiEndpoint + "/votes";
+            public const string VoteEndPoint = VotesEndPoint + "/{id}";
+        }
+
+        //Submission
+        public static class Submission
+        {
+            public const string SubmissionsEndPoint = ApiEndpoint + "/submissions";
+            public const string SubmissionEndPoint = SubmissionsEndPoint + "/{id}";
+        }
+
+        //Leaderboard
+        public static class Leaderboard
+        {
+            public const string LeaderboardsEndPoint = ApiEndpoint + "/leaderboards";
+            public const string LeaderboardEndPoint = LeaderboardsEndPoint + "/{id}";
+        }
+
+        //CourseReview
+        public static class CourseReview
+        {
+            public const string CourseReviewsEndPoint = ApiEndpoint + "/course-reviews";
+            public const string CourseReviewEndPoint = CourseReviewsEndPoint + "/{id}";
+        }
+
+        //Score
+        public static class Score
+        {
+            public const string ScoresEndPoint = ApiEndpoint + "/scores";
+            public const string ScoreEndPoint = ScoresEndPoint + "/{id}";
+        }
     }
 }
