@@ -7,6 +7,7 @@ using Origami.BusinessTier.Payload.Course;
 using Origami.DataTier.Models;
 using Origami.DataTier.Paginate;
 using Origami.DataTier.Repository.Interfaces;
+using System.Linq.Expressions;
 
 namespace Origami.API.Services.Interfaces
 {
@@ -58,13 +59,25 @@ namespace Origami.API.Services.Interfaces
 
         public async Task<IPaginate<GetCourseResponse>> ViewAllCourses(CourseFilter filter, PagingModel pagingModel)
         {
+            if (filter != null && filter.MinPrice.HasValue && filter.MaxPrice.HasValue
+                && filter.MinPrice.Value > filter.MaxPrice.Value)
+            {
+                (filter.MinPrice, filter.MaxPrice) = (filter.MaxPrice, filter.MinPrice);
+            }
+
+            Expression<Func<Course, bool>> pricePredicate = x =>
+                (filter == null ||
+                 (!filter.MinPrice.HasValue || (x.Price.HasValue && x.Price.Value >= filter.MinPrice.Value)) &&
+                 (!filter.MaxPrice.HasValue || (x.Price.HasValue && x.Price.Value <= filter.MaxPrice.Value)));
+
             IPaginate<GetCourseResponse> response = await _unitOfWork.GetRepository<Course>().GetPagingListAsync(
                 selector: x => _mapper.Map<GetCourseResponse>(x),
-                filter: filter,
+                predicate: pricePredicate,
                 orderBy: x => x.OrderBy(c => c.Title),
                 include: q => q.Include(c => c.Teacher),
                 page: pagingModel.page,
-                size: pagingModel.size
+                size: pagingModel.size,
+                filter: filter
             );
 
             return response;
