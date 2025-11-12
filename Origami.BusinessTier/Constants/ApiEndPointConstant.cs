@@ -164,5 +164,12 @@ namespace Origami.BusinessTier.Constants
             public const string ScoresEndPoint = ApiEndpoint + "/scores";
             public const string ScoreEndPoint = ScoresEndPoint + "/{id}";
         }
+
+        //Wallet
+        public static class Wallet
+        {
+            public const string WalletsEndpoint = ApiEndpoint + "/wallets";
+            public const string WalletEndPoint = WalletsEndpoint + "/{id}";
+        }
     }
 }
