@@ -35,8 +35,19 @@ namespace Origami.API.Services.Implement
             var newGuide = _mapper.Map<Guide>(request);
             newGuide.CreatedAt = DateTime.UtcNow;
             newGuide.UpdatedAt = DateTime.UtcNow;
+            newGuide.AuthorId = (int)GetCurrentUserId();
+            if (request.CategoryIds != null && request.CategoryIds.Any())
+            {
+                var categoryRepo = _unitOfWork.GetRepository<Category>();
+                var allCategories = await categoryRepo.GetAllAsync();
 
-            //Chua co AuthorId trong token nen chua gan duoc
+                var categories = allCategories
+                    .Where(c => request.CategoryIds.Contains(c.CategoryId))
+                    .ToList();
+
+                newGuide.Categories = categories;
+            }
+
             await repo.InsertAsync(newGuide);
 
             var isSuccessful = await _unitOfWork.CommitAsync() > 0;

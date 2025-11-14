@@ -2,6 +2,7 @@
 using Origami.DataTier.Models;
 using Origami.DataTier.Repository.Interfaces;
 using System.Security.Claims;
+using static Origami.BusinessTier.Constants.ApiEndPointConstant;
 
 namespace Origami.API.Services.Implement
 {
@@ -19,7 +20,7 @@ namespace Origami.API.Services.Implement
             _mapper = mapper;
             _httpContextAccessor = httpContextAccessor;
         }
-
+       
         protected string GetEmailFromJwt()
         {
             string username = _httpContextAccessor?.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -30,6 +31,13 @@ namespace Origami.API.Services.Implement
         {
             string role = _httpContextAccessor?.HttpContext?.User.FindFirstValue(ClaimTypes.Role);
             return role;
+        }
+        protected int? GetCurrentUserId()
+        {
+            var idStr = _httpContextAccessor?.HttpContext?.User?
+                .FindFirstValue(ClaimTypes.NameIdentifier);
+
+            return int.TryParse(idStr, out var id) ? id : null;
         }
     }
 }

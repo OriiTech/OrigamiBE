@@ -164,5 +164,13 @@ namespace Origami.BusinessTier.Constants
             public const string ScoresEndPoint = ApiEndpoint + "/scores";
             public const string ScoreEndPoint = ScoresEndPoint + "/{id}";
         }
+
+
+        //category
+        public static class Category
+        {
+            public const string CategoriesEndPoint = ApiEndpoint + "/categories";
+            public const string CategoryEndPoint = CategoriesEndPoint + "/{id}";
+        }
     }
 }
