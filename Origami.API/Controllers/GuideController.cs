@@ -38,7 +38,7 @@ namespace Origami.API.Controllers
         public async Task<IActionResult> CreateGuide([FromBody] GuideInfo request)
         {
             var id = await _guideService.CreateNewGuide(request);
-            request.AuthorId = CurrentUserId;         
+            //request.AuthorId = CurrentUserId;         
             return CreatedAtAction(nameof(GetGuide), new { id }, new { id });
         }
 

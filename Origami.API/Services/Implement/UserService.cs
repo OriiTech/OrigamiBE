@@ -95,5 +95,55 @@ namespace Origami.API.Services.Interfaces
 
             return response;
         }
+        public async Task<UpdateUserRoleResponse> UpdateUserRole(UpdateUserRoleRequest request, string adminEmail)
+        {
+            // Kiểm tra admin từ appsettings
+            var adminEmailConfig = _configuration["AdminAccount:Email"];
+            var adminPasswordConfig = _configuration["AdminAccount:Password"];
+
+            if (string.IsNullOrEmpty(adminEmailConfig) || adminEmail != adminEmailConfig)
+                throw new BadHttpRequestException("Unauthorized: Only admin can update user roles");
+
+            // Kiểm tra role mới có tồn tại không
+            var roleRepo = _unitOfWork.GetRepository<Role>();
+            var newRole = await roleRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.RoleId == request.NewRoleId,
+                asNoTracking: true
+            );
+            if (newRole == null)
+                throw new BadHttpRequestException("RoleNotFound");
+
+            // Lấy user cần update
+            var userRepo = _unitOfWork.GetRepository<User>();
+            var user = await userRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.UserId == request.UserId,
+                asNoTracking: false
+            ) ?? throw new BadHttpRequestException("UserNotFound");
+
+            // Kiểm tra xem role có thay đổi không
+            if (user.RoleId == request.NewRoleId)
+                throw new BadHttpRequestException("UserAlreadyHasThisRole");
+
+            // Lưu role cũ
+            var oldRoleId = user.RoleId;
+
+            // Update role (cho phép thay đổi giữa bất kỳ role nào)
+            user.RoleId = request.NewRoleId;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            var isSuccessful = await _unitOfWork.CommitAsync() > 0;
+            if (!isSuccessful)
+                throw new BadHttpRequestException("UpdateRoleFailed");
+
+            return new UpdateUserRoleResponse
+            {
+                UserId = user.UserId,
+                Username = user.Username,
+                Email = user.Email,
+                OldRoleId = oldRoleId,
+                NewRoleId = request.NewRoleId,
+                Message = $"User role updated from {oldRoleId} to {request.NewRoleId} successfully"
+            };
+        }
     }
 }
