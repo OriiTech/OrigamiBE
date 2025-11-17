@@ -50,6 +50,7 @@ namespace Origami.DataTier.Repository.Interfaces
             object filter = null);
 
         #endregion
+        Task<int> CountAsync(Expression<Func<T, bool>> predicate = null);
 
         #region Insert
 

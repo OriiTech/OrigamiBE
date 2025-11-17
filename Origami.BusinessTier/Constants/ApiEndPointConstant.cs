@@ -164,5 +164,26 @@ namespace Origami.BusinessTier.Constants
             public const string ScoresEndPoint = ApiEndpoint + "/scores";
             public const string ScoreEndPoint = ScoresEndPoint + "/{id}";
         }
+
+
+        //category
+        public static class Category
+        {
+            public const string CategoriesEndPoint = ApiEndpoint + "/categories";
+            public const string CategoryEndPoint = CategoriesEndPoint + "/{id}";
+        }
+
+        //Badge
+        public static class Badge
+        {
+            public const string BadgesEndPoint = ApiEndpoint + "/badges";
+            public const string BadgeEndPoint = BadgesEndPoint + "/{id}";
+        }
+        //UserBadge
+        public static class UserBadge
+        {
+            public const string UserBadgesEndPoint = ApiEndpoint + "/user-badges";
+            public const string UserBadgeEndPoint = UserBadgesEndPoint + "/{id}";
+        }
     }
 }
