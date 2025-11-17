@@ -60,6 +60,7 @@ namespace Origami.API.Extensions
             services.AddScoped<ILeaderboardService, LeaderboardService>();
             services.AddScoped<ICourseReviewService, CourseReviewService>();
             services.AddScoped<ICategoryService, CategoryService>();
+            services.AddScoped<IBadgeService, BadgeService>();
 
 
             return services;

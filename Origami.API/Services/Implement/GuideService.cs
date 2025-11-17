@@ -14,6 +14,7 @@ namespace Origami.API.Services.Implement
     public class GuideService : BaseService<GuideService>, IGuideService
     {
         private readonly IConfiguration _configuration;
+        private readonly IBadgeEvaluator _badgeEvaluator;
         public GuideService(IUnitOfWork<OrigamiDbContext> unitOfWork, ILogger<GuideService> logger, IMapper mapper,
             IHttpContextAccessor httpContextAccessor, IConfiguration configuration) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
@@ -53,6 +54,7 @@ namespace Origami.API.Services.Implement
             var isSuccessful = await _unitOfWork.CommitAsync() > 0;
             if (!isSuccessful)
                 throw new BadHttpRequestException("CreateFailed");
+            await _badgeEvaluator.EvaluateBadgesForUser((int)GetCurrentUserId());
 
             return newGuide.GuideId;
         }
