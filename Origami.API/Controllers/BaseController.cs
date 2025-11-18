@@ -9,7 +9,16 @@ namespace Origami.API.Controllers
     public class BaseController<T> : ControllerBase where T : BaseController<T>
     {
         protected ILogger<T> _logger;
-        protected int CurrentUserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+        protected int CurrentUserId
+        {
+            get
+            {
+                var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(claim))
+                    throw new UnauthorizedAccessException("User is not logged in.");
+                return int.Parse(claim);
+            }
+        }
         public BaseController(ILogger<T> logger)
         {
             _logger = logger;

@@ -11,9 +11,8 @@ namespace Origami.API.Mappers
 
             CreateMap<Guide, GetGuideResponse>();
             CreateMap<GuideInfo, Guide>()
-                .ForMember(dest => dest.GuideId, opt => opt.Ignore())
+                .ForMember(dest => dest.GuideId, opt => opt.Ignore()) 
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore());
-                //.ForMember(dest => dest.AuthorId, opt => opt.Ignore());
         }
     }
 }

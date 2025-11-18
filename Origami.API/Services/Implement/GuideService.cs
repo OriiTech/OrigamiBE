@@ -14,6 +14,7 @@ namespace Origami.API.Services.Implement
     public class GuideService : BaseService<GuideService>, IGuideService
     {
         private readonly IConfiguration _configuration;
+        private readonly IBadgeEvaluator _badgeEvaluator;
         public GuideService(IUnitOfWork<OrigamiDbContext> unitOfWork, ILogger<GuideService> logger, IMapper mapper,
             IHttpContextAccessor httpContextAccessor, IConfiguration configuration) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
@@ -35,13 +36,25 @@ namespace Origami.API.Services.Implement
             var newGuide = _mapper.Map<Guide>(request);
             newGuide.CreatedAt = DateTime.UtcNow;
             newGuide.UpdatedAt = DateTime.UtcNow;
+            newGuide.AuthorId = (int)GetCurrentUserId();
+            if (request.CategoryIds != null && request.CategoryIds.Any())
+            {
+                var categoryRepo = _unitOfWork.GetRepository<Category>();
+                var allCategories = await categoryRepo.GetAllAsync();
 
-            //Chua co AuthorId trong token nen chua gan duoc
+                var categories = allCategories
+                    .Where(c => request.CategoryIds.Contains(c.CategoryId))
+                    .ToList();
+
+                newGuide.Categories = categories;
+            }
+
             await repo.InsertAsync(newGuide);
 
             var isSuccessful = await _unitOfWork.CommitAsync() > 0;
             if (!isSuccessful)
                 throw new BadHttpRequestException("CreateFailed");
+            await _badgeEvaluator.EvaluateBadgesForUser((int)GetCurrentUserId());
 
             return newGuide.GuideId;
         }

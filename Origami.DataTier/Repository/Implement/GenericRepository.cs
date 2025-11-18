@@ -132,6 +132,14 @@ namespace Origami.DataTier.Repository.Implement
         }
 
         #endregion
+        public async Task<int> CountAsync(Expression<Func<T, bool>> predicate = null)
+        {
+            IQueryable<T> query = _dbContext.Set<T>();
+            if (predicate != null)
+                query = query.Where(predicate);
+
+            return await query.CountAsync();
+        }
 
         #region Insert
 
