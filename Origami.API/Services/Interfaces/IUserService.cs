@@ -11,5 +11,6 @@ namespace Origami.API.Services.Interfaces
         Task<IPaginate<GetUserResponse>> ViewAllUser(UserFilter filter, PagingModel pagingModel);
         Task<bool> UpdateUserInfo(int id, UserInfo request);
         Task<GetUserResponse> GetUserById(int id);
+        Task<UpdateUserRoleResponse> UpdateUserRole(UpdateUserRoleRequest request, string adminEmail);
     }
 }

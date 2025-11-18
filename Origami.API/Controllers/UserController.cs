@@ -39,5 +39,15 @@ namespace Origami.API.Controllers
             if (!isSuccessful) return Ok("UpdateStatusFailed");
             return Ok("UpdateStatusSuccess");
         }
+        [HttpPatch(ApiEndPointConstant.User.UpdateUserRoleEndPoint)]
+        [ProducesResponseType(typeof(UpdateUserRoleResponse), StatusCodes.Status200OK)]
+        public async Task<IActionResult> UpdateUserRole(int id, [FromBody] UpdateUserRoleRequest request, [FromHeader(Name = "X-Admin-Email")] string? adminEmail)
+        {
+            if (string.IsNullOrEmpty(adminEmail))
+                return BadRequest("Admin email is required in X-Admin-Email header");
+                request.UserId = id;
+                var response = await _userService.UpdateUserRole(request, adminEmail);
+            return Ok(response);
+        }
     }
 }

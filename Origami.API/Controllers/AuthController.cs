@@ -2,6 +2,7 @@
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload.Auth;
+using Origami.BusinessTier.Payload.User;
 
 namespace Origami.API.Controllers
 {
@@ -15,6 +16,14 @@ namespace Origami.API.Controllers
         {
             _authService = authService;
             _authServiceHash = authServiceHash;
+        }
+
+        [HttpPost(ApiEndPointConstant.Auth.Register)]
+        [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status201Created)]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        {
+            var res = await _authService.Register(request);
+            return CreatedAtAction(nameof(Login), new { }, res);
         }
 
         [HttpPost(ApiEndPointConstant.Auth.Login)]

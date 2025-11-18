@@ -37,9 +37,8 @@ namespace Origami.API.Controllers
         [ProducesResponseType(typeof(int), StatusCodes.Status201Created)]
         public async Task<IActionResult> CreateGuide([FromBody] GuideInfo request)
         {
-
-           
-            var id = await _guideService.CreateNewGuide(request);           
+            var id = await _guideService.CreateNewGuide(request);
+            //request.AuthorId = CurrentUserId;         
             return CreatedAtAction(nameof(GetGuide), new { id }, new { id });
         }
 

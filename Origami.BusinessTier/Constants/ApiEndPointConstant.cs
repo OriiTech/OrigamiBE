@@ -19,6 +19,7 @@ namespace Origami.BusinessTier.Constants
         {
             public const string UsersEndPoint = ApiEndpoint + "/users";
             public const string UserEndPoint = UsersEndPoint + "/{id}";
+            public const string UpdateUserRoleEndPoint = UserEndPoint + "/role";
         }
 
         //Role
@@ -86,6 +87,7 @@ namespace Origami.BusinessTier.Constants
         //Auth
         public static class Auth
         {
+            public const string Register = ApiEndpoint + "/auth/register";
             public const string Login = ApiEndpoint + "/auth/login";
             public const string Refresh = ApiEndpoint + "/auth/refresh";
             public const string Logout = ApiEndpoint + "/auth/logout";

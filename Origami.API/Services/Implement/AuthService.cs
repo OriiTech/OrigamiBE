@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Origami.API.Services.Implement;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Payload.Auth;
+using Origami.BusinessTier.Payload.User;
 using Origami.BusinessTier.Utils;
 using Origami.DataTier.Models;
 using Origami.DataTier.Repository.Interfaces;
@@ -28,8 +29,117 @@ namespace Origami.API.Services.Implement
             _configuration = configuration;
         }
 
+        public async Task<AuthResponse> Register(RegisterRequest request)
+        {
+            var userRepo = _unitOfWork.GetRepository<User>();
+
+            // Kiểm tra email đã tồn tại chưa
+            var existingUser = await userRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.Email.ToLower() == request.Email.ToLower(),
+                asNoTracking: true
+            );
+
+            if (existingUser != null)
+                throw new BadHttpRequestException("EmailAlreadyExists");
+
+            // Kiểm tra username đã tồn tại chưa (nếu cần)
+            var existingUsername = await userRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.Username.ToLower() == request.Username.ToLower(),
+                asNoTracking: true
+            );
+
+            if (existingUsername != null)
+                throw new BadHttpRequestException("UsernameAlreadyExists");
+
+            // Kiểm tra RoleId có tồn tại không (nếu có)
+            if (request.RoleId.HasValue)
+            {
+                var roleRepo = _unitOfWork.GetRepository<Role>();
+                var role = await roleRepo.GetFirstOrDefaultAsync(
+                    predicate: x => x.RoleId == request.RoleId.Value,
+                    asNoTracking: true
+                );
+                if (role == null)
+                    throw new BadHttpRequestException("RoleNotFound");
+            }
+
+            // Hash password
+            var hashedPassword = PasswordUtil.HashPassword(request.Password);
+
+            // Tạo user mới
+            var newUser = new User
+            {
+                Username = request.Username,
+                Email = request.Email,
+                Password = hashedPassword,
+                RoleId = request.RoleId ?? 1,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await userRepo.InsertAsync(newUser);
+
+            var isSuccessful = await _unitOfWork.CommitAsync() > 0;
+            if (!isSuccessful)
+                throw new BadHttpRequestException("RegisterFailed");
+
+            // Load user với Role để tạo token
+            var createdUser = await userRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.UserId == newUser.UserId,
+                include: q => q.Include(u => u.Role),
+                asNoTracking: true
+            ) ?? throw new BadHttpRequestException("UserNotFoundAfterCreation");
+
+            // Tự động login sau khi register - tạo tokens
+            var (accessToken, accessExp) = GenerateAccessToken(createdUser);
+            var (refreshToken, refreshExp) = GenerateRefreshToken();
+
+            // Lưu refresh token
+            var refreshRepo = _unitOfWork.GetRepository<RefreshToken>();
+            await refreshRepo.InsertAsync(new RefreshToken
+            {
+                UserId = createdUser.UserId,
+                RefreshToken1 = refreshToken,
+                ExpiresAt = refreshExp,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            });
+
+            var commitOk = await _unitOfWork.CommitAsync() > 0;
+            if (!commitOk)
+                throw new BadHttpRequestException("RegisterTokenFailed");
+
+            return BuildAuthResponse(createdUser, accessToken, accessExp, refreshToken, refreshExp);
+        }
+
         public async Task<AuthResponse> Login(LoginRequest request)
         {
+            // Kiểm tra admin từ appsettings TRƯỚC
+            var adminEmail = _configuration["AdminAccount:Email"];
+            var adminPassword = _configuration["AdminAccount:Password"];
+
+            if (!string.IsNullOrEmpty(adminEmail) &&
+                !string.IsNullOrEmpty(adminPassword) &&
+                string.Equals(request.Email, adminEmail, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(request.Password, adminPassword, StringComparison.Ordinal))
+            {
+                // Admin login - không tạo token, trả về AuthResponse với token = null
+                return new AuthResponse
+                {
+                    AccessToken = null,
+                    AccessTokenExpiresAt = null,
+                    RefreshToken = null,
+                    RefreshTokenExpiresAt = null,
+                    User = new AuthUserInfo
+                    {
+                        UserId = 0,
+                        Username = "Admin",
+                        Email = adminEmail,
+                        RoleId = null
+                    }
+                };
+            }
+
+            // Nếu không phải admin, kiểm tra database như bình thường
             var userRepo = _unitOfWork.GetRepository<User>();
             var user = await userRepo.GetFirstOrDefaultAsync(
                 predicate: x => x.Email == request.Email,
@@ -41,7 +151,7 @@ namespace Origami.API.Services.Implement
             if (!string.Equals(user.Password, hashed, StringComparison.Ordinal))
                 throw new BadHttpRequestException("InvalidEmailOrPassword");
 
-            // Tạo tokens
+            // Tạo tokens cho user thường
             var (accessToken, accessExp) = GenerateAccessToken(user);
             var (refreshToken, refreshExp) = GenerateRefreshToken();
 
@@ -125,14 +235,14 @@ namespace Origami.API.Services.Implement
             var minutes = int.Parse(jwtSection["AccessTokenMinutes"] ?? "60");
 
             var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Email),
-                new Claim(ClaimTypes.Name, user.Username ?? string.Empty),
-                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                new Claim(ClaimTypes.Role, user.RoleId?.ToString() ?? string.Empty),
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-            };
+    {
+        new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+        new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+        new Claim(ClaimTypes.Name, user.Username ?? string.Empty),
+        new Claim(ClaimTypes.Role, user.RoleId?.ToString() ?? string.Empty),
+        new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+    };
 
             var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
             var creds = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
