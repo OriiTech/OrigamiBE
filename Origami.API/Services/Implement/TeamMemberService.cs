@@ -20,54 +20,66 @@ namespace Origami.API.Services.Interfaces
             _configuration = configuration;
         }
 
-        public async Task<int> CreateNewTeamMember(TeamMemberInfo request)
+        public async Task<int> CreateNewTeamMember(BulkAddTeamMemberRequest request)
         {
-            var repo = _unitOfWork.GetRepository<TeamMember>();
-
-            // Kiểm tra TeamId có tồn tại không
             var teamRepo = _unitOfWork.GetRepository<Team>();
             var team = await teamRepo.GetFirstOrDefaultAsync(
                 predicate: x => x.TeamId == request.TeamId,
                 include: q => q.Include(t => t.Challenge).Include(t => t.TeamMembers),
-                asNoTracking: true
-            );
-            if (team == null)
-                throw new BadHttpRequestException("TeamNotFound");
+                asNoTracking: false
+            ) ?? throw new BadHttpRequestException("TeamNotFound");
 
-            // Kiểm tra UserId có tồn tại không
+            var challenge = team.Challenge;
+            if (!challenge.IsTeamBased)
+                throw new BadHttpRequestException("SoloChallengeCannotAddMembersManually");
+
+            if (request.Members == null || request.Members.Count == 0)
+                throw new BadHttpRequestException("MembersRequired");
+
             var userRepo = _unitOfWork.GetRepository<User>();
-            var user = await userRepo.GetFirstOrDefaultAsync(
-                predicate: x => x.UserId == request.UserId,
-                asNoTracking: true
-            );
-            if (user == null)
-                throw new BadHttpRequestException("UserNotFound");
+            var teamMemberRepo = _unitOfWork.GetRepository<TeamMember>();
 
-            // Kiểm tra User đã có trong Team này chưa (Unique constraint)
-            bool alreadyExists = await repo.AnyAsync(
-                x => x.TeamId == request.TeamId && x.UserId == request.UserId
-            );
-            if (alreadyExists)
-                throw new BadHttpRequestException("UserAlreadyInTeam");
+            var existingCount = team.TeamMembers?.Count ?? 0;
+            var currentCount = existingCount;
 
-            // Kiểm tra MaxTeamSize của Challenge (nếu có)
-            if (team.Challenge != null && team.Challenge.MaxTeamSize.HasValue)
+            foreach (var member in request.Members)
             {
-                int currentMemberCount = team.TeamMembers?.Count ?? 0;
-                if (currentMemberCount >= team.Challenge.MaxTeamSize.Value)
+                // lấy user theo email hoặc username
+                if (string.IsNullOrWhiteSpace(member.Email) && string.IsNullOrWhiteSpace(member.Username))
+                    throw new BadHttpRequestException("MemberIdentityRequired");
+
+                var user = await userRepo.GetFirstOrDefaultAsync(
+                    predicate: x =>
+                        (!string.IsNullOrWhiteSpace(member.Email) && x.Email == member.Email) ||
+                        (!string.IsNullOrWhiteSpace(member.Username) && x.Username == member.Username),
+                    asNoTracking: true
+                ) ?? throw new BadHttpRequestException($"UserNotFound: {member.Email ?? member.Username}");
+
+                // check trùng
+                bool alreadyExists = team.TeamMembers.Any(tm => tm.UserId == user.UserId);
+                if (alreadyExists)
+                    continue; // hoặc throw nếu muốn
+
+                // check MaxTeamSize
+                if (challenge.MaxTeamSize.HasValue && currentCount >= challenge.MaxTeamSize.Value)
                     throw new BadHttpRequestException("TeamIsFull");
+
+                var newMember = new TeamMember
+                {
+                    TeamId = team.TeamId,
+                    UserId = user.UserId,
+                    JoinedAt = DateTime.UtcNow
+                };
+
+                await teamMemberRepo.InsertAsync(newMember);
+                currentCount++;
             }
 
-            var newTeamMember = _mapper.Map<TeamMember>(request);
-            newTeamMember.JoinedAt = DateTime.UtcNow;
+            if (currentCount == existingCount)
+                throw new BadHttpRequestException("NoMemberAdded");
 
-            await repo.InsertAsync(newTeamMember);
-
-            var isSuccessful = await _unitOfWork.CommitAsync() > 0;
-            if (!isSuccessful)
-                throw new BadHttpRequestException("CreateFailed");
-
-            return newTeamMember.TeamMemberId;
+            await _unitOfWork.CommitAsync();
+            return currentCount - existingCount;
         }
 
         public async Task<GetTeamMemberResponse> GetTeamMemberById(int id)

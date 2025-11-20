@@ -89,26 +89,7 @@ namespace Origami.API.Services.Implement
                 asNoTracking: true
             ) ?? throw new BadHttpRequestException("UserNotFoundAfterCreation");
 
-            // Tự động login sau khi register - tạo tokens
-            var (accessToken, accessExp) = GenerateAccessToken(createdUser);
-            var (refreshToken, refreshExp) = GenerateRefreshToken();
-
-            // Lưu refresh token
-            var refreshRepo = _unitOfWork.GetRepository<RefreshToken>();
-            await refreshRepo.InsertAsync(new RefreshToken
-            {
-                UserId = createdUser.UserId,
-                RefreshToken1 = refreshToken,
-                ExpiresAt = refreshExp,
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true
-            });
-
-            var commitOk = await _unitOfWork.CommitAsync() > 0;
-            if (!commitOk)
-                throw new BadHttpRequestException("RegisterTokenFailed");
-
-            return BuildAuthResponse(createdUser, accessToken, accessExp, refreshToken, refreshExp);
+            return await GenerateAuthResponseAsync(createdUser);
         }
 
         public async Task<AuthResponse> Login(LoginRequest request)
@@ -151,24 +132,55 @@ namespace Origami.API.Services.Implement
             if (!string.Equals(user.Password, hashed, StringComparison.Ordinal))
                 throw new BadHttpRequestException("InvalidEmailOrPassword");
 
-            // Tạo tokens cho user thường
-            var (accessToken, accessExp) = GenerateAccessToken(user);
-            var (refreshToken, refreshExp) = GenerateRefreshToken();
+            return await GenerateAuthResponseAsync(user);
+        }
 
-            // Lưu refresh token
-            var refreshRepo = _unitOfWork.GetRepository<RefreshToken>();
-            await refreshRepo.InsertAsync(new RefreshToken
+        public async Task<AuthResponse> LoginWithGoogle(string email, string username)
+        {
+            if (string.IsNullOrEmpty(email))
+                throw new BadHttpRequestException("EmailRequired");
+
+            var userRepo = _unitOfWork.GetRepository<User>();
+            User? user = await userRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.Email == email,
+                include: q => q.Include(u => u.Role),
+                asNoTracking: false
+            );
+
+            if (user == null)
             {
-                UserId = user.UserId,
-                RefreshToken1 = refreshToken,
-                ExpiresAt = refreshExp,
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true
-            });
-            var ok = await _unitOfWork.CommitAsync() > 0;
-            if (!ok) throw new BadHttpRequestException("LoginPersistFailed");
+                user = new User
+                {
+                    Username = string.IsNullOrEmpty(username) ? email : username,
+                    Email = email,
+                    Password = PasswordUtil.HashPassword(Guid.NewGuid().ToString()),
+                    RoleId = 1,
+                    CreatedAt = DateTime.UtcNow
+                };
 
-            return BuildAuthResponse(user, accessToken, accessExp, refreshToken, refreshExp);
+                await userRepo.InsertAsync(user);
+                if (await _unitOfWork.CommitAsync() <= 0)
+                    throw new BadHttpRequestException("RegisterFailed");
+
+                // reload with role for response
+                user = await userRepo.GetFirstOrDefaultAsync(
+                    predicate: x => x.UserId == user.UserId,
+                    include: q => q.Include(u => u.Role),
+                    asNoTracking: true
+                ) ?? throw new BadHttpRequestException("UserNotFoundAfterGoogle");
+            }
+            else if (user.Role == null)
+            {
+                user.RoleId ??= 1;
+                await _unitOfWork.CommitAsync();
+                user = await userRepo.GetFirstOrDefaultAsync(
+                    predicate: x => x.UserId == user.UserId,
+                    include: q => q.Include(u => u.Role),
+                    asNoTracking: true
+                ) ?? throw new BadHttpRequestException("UserNotFoundAfterGoogle");
+            }
+
+            return await GenerateAuthResponseAsync(user);
         }
 
         public async Task<AuthResponse> Refresh(RefreshTokenRequest request)
@@ -270,6 +282,28 @@ namespace Origami.API.Services.Implement
                 .Replace("/", string.Empty)
                 .Replace("=", string.Empty);
             return (token, DateTime.UtcNow.AddDays(days));
+        }
+
+        private async Task<AuthResponse> GenerateAuthResponseAsync(User user)
+        {
+            var (accessToken, accessExp) = GenerateAccessToken(user);
+            var (refreshToken, refreshExp) = GenerateRefreshToken();
+
+            var refreshRepo = _unitOfWork.GetRepository<RefreshToken>();
+            await refreshRepo.InsertAsync(new RefreshToken
+            {
+                UserId = user.UserId,
+                RefreshToken1 = refreshToken,
+                ExpiresAt = refreshExp,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            });
+
+            var ok = await _unitOfWork.CommitAsync() > 0;
+            if (!ok)
+                throw new BadHttpRequestException("TokenPersistFailed");
+
+            return BuildAuthResponse(user, accessToken, accessExp, refreshToken, refreshExp);
         }
 
         private static AuthResponse BuildAuthResponse(User user, string access, DateTime accessExp, string refresh, DateTime refreshExp)

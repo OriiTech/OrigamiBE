@@ -7,6 +7,7 @@ namespace Origami.API.Services.Interfaces
     {
         Task<AuthResponse> Register(RegisterRequest request);
         Task<AuthResponse> Login(LoginRequest request);
+        Task<AuthResponse> LoginWithGoogle(string email, string username);
         Task<AuthResponse> Refresh(RefreshTokenRequest request);
         Task<bool> Logout(string refreshToken);
     }
