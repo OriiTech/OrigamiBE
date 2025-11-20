@@ -1,7 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload.Auth;
+using Microsoft.AspNetCore.WebUtilities;
+using System.Security.Claims;
 using Origami.BusinessTier.Payload.User;
 
 namespace Origami.API.Controllers
@@ -32,6 +36,48 @@ namespace Origami.API.Controllers
         {
             var res = await _authService.Login(request);
             return Ok(res);
+        }
+
+        [HttpGet(ApiEndPointConstant.Auth.GoogleLogin)]
+        public IActionResult GoogleLogin([FromQuery] string returnUrl = "/")
+        {
+            var properties = new AuthenticationProperties
+            {
+                RedirectUri = Url.Action(nameof(GoogleCallback), new { returnUrl })
+            };
+
+            return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+        }
+
+        [HttpGet(ApiEndPointConstant.Auth.GoogleCallback)]
+        public async Task<IActionResult> GoogleCallback([FromQuery] string returnUrl = "/")
+        {
+            var authenticateResult = await HttpContext.AuthenticateAsync("External");
+            if (!authenticateResult.Succeeded || authenticateResult.Principal == null)
+            {
+                await HttpContext.SignOutAsync("External");
+                return Redirect($"{returnUrl}?error=ExternalLoginFailed");
+            }
+
+            var email = authenticateResult.Principal.FindFirst(ClaimTypes.Email)?.Value;
+            var name = authenticateResult.Principal.FindFirst(ClaimTypes.Name)?.Value;
+
+            await HttpContext.SignOutAsync("External");
+
+            if (string.IsNullOrEmpty(email))
+                return Redirect($"{returnUrl}?error=EmailRequired");
+
+            var authResponse = await _authService.LoginWithGoogle(email, name ?? email);
+
+            var query = new Dictionary<string, string?>
+            {
+                ["accessToken"] = authResponse.AccessToken,
+                ["refreshToken"] = authResponse.RefreshToken,
+                ["expiresIn"] = authResponse.AccessTokenExpiresAt?.ToString("o")
+            };
+
+            var redirectUrl = QueryHelpers.AddQueryString(returnUrl, query);
+            return Redirect(redirectUrl);
         }
 
         [HttpPost(ApiEndPointConstant.Auth.Refresh)]

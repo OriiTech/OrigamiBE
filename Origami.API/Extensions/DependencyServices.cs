@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -65,10 +66,15 @@ namespace Origami.API.Extensions
 
             return services;
         }
-        public static IServiceCollection AddJwtValidation(this IServiceCollection services)
+        public static AuthenticationBuilder AddJwtValidation(this IServiceCollection services, IConfiguration configuration)
         {
+            var jwtSection = configuration.GetSection("Jwt");
+            var issuer = jwtSection["Issuer"];
+            var audience = jwtSection["Audience"];
+            var key = jwtSection["Key"] ?? throw new InvalidOperationException("Jwt:Key is not configured");
 
-            services.AddAuthentication(options =>
+            var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+            return services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -77,15 +83,14 @@ namespace Origami.API.Extensions
                 {
                     options.TokenValidationParameters = new TokenValidationParameters()
                     {
-                        ValidIssuer = "Origami",
-                        ValidateIssuer = true,
-                        ValidateAudience = false,
+                        ValidIssuer = issuer,
+                        ValidateIssuer = !string.IsNullOrEmpty(issuer),
+                        ValidAudience = audience,
+                        ValidateAudience = !string.IsNullOrEmpty(audience),
                         ValidateIssuerSigningKey = true,
-                        IssuerSigningKey =
-                            new SymmetricSecurityKey(Encoding.UTF8.GetBytes("OrigamiTechSharingSuperSecretKey123456"))
+                        IssuerSigningKey = signingKey
                     };
                 });
-            return services;
         }
         public static IServiceCollection AddConfigSwagger(this IServiceCollection services)
         {

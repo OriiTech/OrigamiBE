@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -32,14 +33,16 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
-        [HttpPost(ApiEndPointConstant.TeamMember.TeamMembersEndPoint)]
+        [Authorize(Roles = "1")]
+        [HttpPost(ApiEndPointConstant.TeamMember.TeamMembersEndPoint + "/bulk")]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
-        public async Task<IActionResult> CreateTeamMember(TeamMemberInfo request)
+        public async Task<IActionResult> BulkAddMembers([FromBody] BulkAddTeamMemberRequest request)
         {
-            var response = await _teamMemberService.CreateNewTeamMember(request);
-            return Ok(response);
+            var added = await _teamMemberService.CreateNewTeamMember(request);
+            return Ok($"{added} members added");
         }
 
+        [Authorize(Roles = "1")]
         [HttpPatch(ApiEndPointConstant.TeamMember.TeamMemberEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateTeamMember(int id, TeamMemberInfo request)
@@ -49,6 +52,7 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+        [Authorize(Roles = "1")]
         [HttpDelete(ApiEndPointConstant.TeamMember.TeamMemberEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteTeamMember(int id)

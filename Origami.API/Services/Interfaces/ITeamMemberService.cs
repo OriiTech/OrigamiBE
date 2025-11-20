@@ -6,7 +6,7 @@ namespace Origami.API.Services.Interfaces
 {
     public interface ITeamMemberService
     {
-        Task<int> CreateNewTeamMember(TeamMemberInfo request);
+        Task<int> CreateNewTeamMember(BulkAddTeamMemberRequest request);
         Task<IPaginate<GetTeamMemberResponse>> ViewAllTeamMembers(TeamMemberFilter filter, PagingModel pagingModel);
         Task<GetTeamMemberResponse> GetTeamMemberById(int id);
         Task<bool> UpdateTeamMember(int id, TeamMemberInfo request);

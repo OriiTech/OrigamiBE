@@ -1,3 +1,4 @@
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Origami.API.Extensions;
@@ -8,7 +9,7 @@ using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddJwtValidation();
+var authBuilder = builder.Services.AddJwtValidation(builder.Configuration);
 builder.Services.AddConfigSwagger();
 builder.Services.AddCors(options =>
 {
@@ -35,6 +36,15 @@ builder.Services.AddEndpointsApiExplorer();
 //builder.Services.AddConfigSwagger();
 //builder.Services.AddSwaggerGen();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+authBuilder.AddCookie("External");
+authBuilder.AddGoogle(options =>
+{
+    IConfigurationSection googleAuthNSection = builder.Configuration.GetSection("Authentication:Google");
+    options.ClientId = googleAuthNSection["ClientId"] ?? throw new InvalidOperationException("Google ClientId is not configured");
+    options.ClientSecret = googleAuthNSection["ClientSecret"] ?? throw new InvalidOperationException("Google ClientSecret is not configured");
+    options.CallbackPath = googleAuthNSection["CallbackPath"] ?? "/signin-google";
+    options.SignInScheme = "External";
+});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -46,7 +56,7 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseCors(CorsConstant.PolicyName);
 app.UseHttpsRedirection();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
