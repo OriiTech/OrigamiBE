@@ -6,7 +6,8 @@ using Origami.BusinessTier.Constants;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
-
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 // Add services to the container.
 builder.Services.AddJwtValidation();
 builder.Services.AddConfigSwagger();
