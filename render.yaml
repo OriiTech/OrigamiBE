@@ -13,6 +13,8 @@ services:
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
+      - key: Swagger__Enabled
+        value: "true"
       - key: ConnectionStrings__SQLServerDatabase
         sync: false # set this in Render dashboard; currently points to local SQL Server
       - key: Jwt__Issuer
