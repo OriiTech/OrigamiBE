@@ -15,11 +15,17 @@ namespace Origami.API.Controllers
     {
         private readonly IAuthService _authService;
         private readonly IPasswordHashService _authServiceHash;
+        private readonly IConfiguration _configuration;
 
-        public AuthController(ILogger<AuthController> logger, IAuthService authService, IPasswordHashService authServiceHash) : base(logger)
+        public AuthController(
+            ILogger<AuthController> logger,
+            IAuthService authService,
+            IPasswordHashService authServiceHash,
+            IConfiguration configuration) : base(logger)
         {
             _authService = authService;
             _authServiceHash = authServiceHash;
+            _configuration = configuration;
         }
 
         [HttpPost(ApiEndPointConstant.Auth.Register)]
@@ -39,11 +45,50 @@ namespace Origami.API.Controllers
         }
 
         [HttpGet(ApiEndPointConstant.Auth.GoogleLogin)]
-        public IActionResult GoogleLogin([FromQuery] string returnUrl = "/")
+        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        public IActionResult GoogleLogin([FromQuery] string? returnUrl = null)
         {
+            // Khi gọi từ Swagger hoặc API client, trả về link trực tiếp đến Google OAuth
+            if (Request.Headers["Accept"].Any(h => h.Contains("application/json", StringComparison.OrdinalIgnoreCase)) ||
+                !Request.Headers["Accept"].Any())
+            {
+                var (scheme, host) = ResolveRequestContext();
+                var clientId = _configuration["Authentication:Google:ClientId"];
+                var callbackPath = _configuration["Authentication:Google:CallbackPath"] ?? "/signin-google";
+                
+                if (string.IsNullOrEmpty(clientId))
+                {
+                    return BadRequest(new { error = "Google ClientId is not configured" });
+                }
+
+                // Build redirect URI tuyệt đối
+                var redirectUri = $"{scheme}://{host}{callbackPath}";
+                
+                // Build Google OAuth URL
+                var state = !string.IsNullOrEmpty(returnUrl) ? returnUrl : "/";
+                var googleAuthUrl = $"https://accounts.google.com/o/oauth2/v2/auth" +
+                    $"?client_id={Uri.EscapeDataString(clientId)}" +
+                    $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
+                    $"&response_type=code" +
+                    $"&scope=openid profile email" +
+                    $"&state={Uri.EscapeDataString(state)}" +
+                    $"&access_type=offline" +
+                    $"&prompt=consent";
+
+                return Ok(new
+                {
+                    authorizationUrl = googleAuthUrl,
+                    message = "Open this URL in your browser to continue Google authentication.",
+                    redirectUri = redirectUri
+                });
+            }
+
+            // Khi truy cập trực tiếp từ browser, thực hiện Challenge
+            var finalReturnUrl = returnUrl ?? "/";
+            var callbackUrl = BuildCallbackUrl(finalReturnUrl);
             var properties = new AuthenticationProperties
             {
-                RedirectUri = Url.Action(nameof(GoogleCallback), new { returnUrl })
+                RedirectUri = callbackUrl
             };
 
             return Challenge(properties, GoogleDefaults.AuthenticationScheme);
@@ -102,6 +147,33 @@ namespace Origami.API.Controllers
         {
             var res = await _authServiceHash.HashAsync(request);
             return Ok(res);
+        }
+
+        private (string Scheme, string Host) ResolveRequestContext()
+        {
+            var scheme = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? Request.Scheme;
+            var host = Request.Headers["X-Forwarded-Host"].FirstOrDefault() ?? Request.Host.Value;
+            return (scheme, host);
+        }
+
+        private string BuildCallbackUrl(string returnUrl)
+        {
+            var (scheme, host) = ResolveRequestContext();
+            // Build full URL to our callback endpoint
+            var callbackUrl = Url.ActionLink(
+                action: nameof(GoogleCallback),
+                controller: null,
+                values: new { returnUrl },
+                protocol: scheme,
+                host: host);
+            
+            // Fallback nếu Url.ActionLink trả null
+            if (string.IsNullOrEmpty(callbackUrl))
+            {
+                callbackUrl = $"{scheme}://{host}{ApiEndPointConstant.Auth.GoogleCallback}?returnUrl={Uri.EscapeDataString(returnUrl)}";
+            }
+            
+            return callbackUrl;
         }
     }
 }
