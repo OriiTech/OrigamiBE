@@ -447,9 +447,6 @@ public partial class OrigamiDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
-            entity.Property(e => e.Price)
-                .HasColumnType("decimal(10, 2)")
-                .HasColumnName("price");
             entity.Property(e => e.Title)
                 .HasMaxLength(255)
                 .HasColumnName("title");
