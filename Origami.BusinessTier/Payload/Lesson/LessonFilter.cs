@@ -10,7 +10,5 @@ namespace Origami.BusinessTier.Payload.Lesson
     {
         public string? Title { get; set; }
         public int? CourseId { get; set; }
-        public decimal? MinPrice { get; set; }
-        public decimal? MaxPrice { get; set; }
     }
 }

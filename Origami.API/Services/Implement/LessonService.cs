@@ -61,22 +61,9 @@ namespace Origami.API.Services.Interfaces
 
         public async Task<IPaginate<GetLessonResponse>> ViewAllLessons(LessonFilter filter, PagingModel pagingModel)
         {
-            // Normalize khoảng giá (tùy chọn: hoán đổi nếu Min > Max)
-            if (filter != null && filter.MinPrice.HasValue && filter.MaxPrice.HasValue
-                && filter.MinPrice.Value > filter.MaxPrice.Value)
-            {
-                (filter.MinPrice, filter.MaxPrice) = (filter.MaxPrice, filter.MinPrice);
-            }
-
-            // Predicate cho khoảng giá
-            Expression<Func<Lesson, bool>> pricePredicate = x =>
-                (filter == null ||
-                 (!filter.MinPrice.HasValue || (x.Price.HasValue && x.Price.Value >= filter.MinPrice.Value)) &&
-                 (!filter.MaxPrice.HasValue || (x.Price.HasValue && x.Price.Value <= filter.MaxPrice.Value)));
-
             IPaginate<GetLessonResponse> response = await _unitOfWork.GetRepository<Lesson>().GetPagingListAsync(
                 selector: x => _mapper.Map<GetLessonResponse>(x),
-                predicate: pricePredicate,
+                predicate: null,
                 orderBy: x => x.OrderBy(l => l.Title),
                 include: q => q.Include(l => l.Course),
                 page: pagingModel.page,
@@ -112,8 +99,6 @@ namespace Origami.API.Services.Interfaces
                 lesson.Title = request.Title;
             if (!string.IsNullOrEmpty(request.Description))
                 lesson.Description = request.Description;
-            if (request.Price.HasValue)
-                lesson.Price = request.Price;
 
             bool isSuccessful = await _unitOfWork.CommitAsync() > 0;
             return isSuccessful;
