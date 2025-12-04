@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Origami.BusinessTier.Payload.Step;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,6 +20,6 @@ namespace Origami.BusinessTier.Payload.Guide
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public List<int>? CategoryIds { get; set; } = new();
-
+        public List<StepInfo> Steps { get; set; } = new();
     }
 }

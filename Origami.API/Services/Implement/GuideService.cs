@@ -121,12 +121,18 @@ namespace Origami.API.Services.Implement
                 selector: x => _mapper.Map<GetGuideResponse>(x),
                 predicate: predicate,
                 orderBy: q => q.OrderBy(o => o.Title),
+                include: q => q
+                    .Include(g => g.Steps)
+                    .Include(g => g.Categories)
+                    .Include(g => g.Author)
+                    .Include(g => g.Origami),
                 page: pagingModel.page,
                 size: pagingModel.size
             );
 
             return response;
         }
+
 
 
     }
