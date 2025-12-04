@@ -8,6 +8,7 @@ namespace Origami.API.Mappers
     {
         public StepModule()
         {
+            CreateMap<Step, StepInfo>();
             CreateMap<Step, GetStepResponse>();
             CreateMap<StepInfo, Step>()
                 .ForMember(dest => dest.StepId, opt => opt.Ignore())
