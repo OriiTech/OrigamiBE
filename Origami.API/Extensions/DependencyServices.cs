@@ -29,7 +29,7 @@ namespace Origami.API.Extensions
 
             services.AddDbContext<OrigamiDbContext>(options =>
             {
-                options.UseSqlServer(builder.Configuration.GetConnectionString("SQLServerDatabase"));
+                options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSQLDatabase"));
             });
 
             return services;
