@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,26 +7,36 @@ using Origami.API.Extensions;
 using Origami.API.Middlewares;
 using Origami.BusinessTier.Constants;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Configuration.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+if (builder.Environment.IsProduction())
+{
+    foreach (var source in builder.Configuration.Sources.OfType<JsonConfigurationSource>())
+    {
+        source.ReloadOnChange = false;
+    }
+}
+
+// Lấy port từ biến môi trường của Render
 var port = Environment.GetEnvironmentVariable("PORT");
 if (!string.IsNullOrEmpty(port))
 {
     builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 }
-// Add services to the container.
-var authBuilder = builder.Services.AddJwtValidation(builder.Configuration);
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
 });
+
+var authBuilder = builder.Services.AddJwtValidation(builder.Configuration);
 builder.Services.AddConfigSwagger();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: CorsConstant.PolicyName,
         policy =>
         {
-            policy.WithOrigins("*")
+            policy.WithOrigins("*") // Lưu ý: Cho production thực tế nên giới hạn lại Origin
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
@@ -38,13 +49,11 @@ builder.Services.AddControllers().AddJsonOptions(x =>
 builder.Services.AddDatabase(builder);
 builder.Services.AddUnitOfWork();
 builder.Services.AddServices();
-//builder.Services.AddJwtValidation();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddConfigSwagger();
-//builder.Services.AddSwaggerGen();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
 authBuilder.AddCookie("External");
 authBuilder.AddGoogle(options =>
 {
@@ -54,6 +63,7 @@ authBuilder.AddGoogle(options =>
     options.CallbackPath = googleAuthNSection["CallbackPath"] ?? "/signin-google";
     options.SignInScheme = "External";
 });
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -64,6 +74,7 @@ if (swaggerEnabled)
     app.UseSwaggerUI();
 }
 app.UseForwardedHeaders();
+
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseCors(CorsConstant.PolicyName);
 app.UseHttpsRedirection();
