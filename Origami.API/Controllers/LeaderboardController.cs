@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -16,6 +17,9 @@ namespace Origami.API.Controllers
             _leaderboardService = leaderboardService;
         }
 
+        // Get leaderboard by id
+
+        [Authorize]
         [HttpGet(ApiEndPointConstant.Leaderboard.LeaderboardEndPoint)]
         [ProducesResponseType(typeof(GetLeaderboardResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetLeaderboard(int id)
@@ -24,6 +28,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // View all leaderboards with filter and paging
+
+        [Authorize]
         [HttpGet(ApiEndPointConstant.Leaderboard.LeaderboardsEndPoint)]
         [ProducesResponseType(typeof(GetLeaderboardResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> ViewAllLeaderboards([FromQuery] LeaderboardFilter filter, [FromQuery] PagingModel pagingModel)
@@ -32,6 +39,10 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+
+        // Create new leaderboard
+
+        [Authorize(Roles = "admin, staff")]
         [HttpPost(ApiEndPointConstant.Leaderboard.LeaderboardsEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateLeaderboard(LeaderboardInfo request)
@@ -40,6 +51,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // Update leaderboard
+
+        [Authorize(Roles = "admin, staff")]
         [HttpPatch(ApiEndPointConstant.Leaderboard.LeaderboardEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateLeaderboard(int id, LeaderboardInfo request)
@@ -49,6 +63,10 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+
+        // Delete leaderboard
+
+        [Authorize(Roles = "admin, staff")]
         [HttpDelete(ApiEndPointConstant.Leaderboard.LeaderboardEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteLeaderboard(int id)

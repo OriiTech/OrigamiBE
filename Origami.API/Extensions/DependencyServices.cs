@@ -10,6 +10,7 @@ using Origami.DataTier.Repository.Implement;
 using Origami.DataTier.Repository.Interfaces;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text;
+using System.Text.Json;
 
 namespace Origami.API.Extensions
 {
@@ -91,6 +92,44 @@ namespace Origami.API.Extensions
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKey = signingKey
                     };
+                    options.Events = new JwtBearerEvents
+                    {
+                        // Not logged in / invalid token
+                        OnChallenge = context =>
+                        {
+                            context.HandleResponse(); 
+
+                            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                            context.Response.ContentType = "application/json";
+
+                            var payload = JsonSerializer.Serialize(new
+                            {
+                                status = 401,
+                                error = "Unauthorized",
+                                message = "You must log in to access this resource."
+                            });
+
+                            return context.Response.WriteAsync(payload);
+                        },
+
+                        // Logged in, but no permission/role
+                        OnForbidden = context =>
+                        {
+                            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                            context.Response.ContentType = "application/json";
+
+                            var payload = JsonSerializer.Serialize(new
+                            {
+                                status = 403,
+                                error = "Forbidden",
+                                message = "You do not have permission to access this resource."
+                            });
+
+                            return context.Response.WriteAsync(payload);
+                        }
+                    };
+
+
                 });
         }
         public static IServiceCollection AddConfigSwagger(this IServiceCollection services)

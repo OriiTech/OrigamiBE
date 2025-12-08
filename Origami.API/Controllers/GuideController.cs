@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -17,6 +18,10 @@ namespace Origami.API.Controllers
             _guideService = guideService;
         }
 
+
+        // Get guide by id
+
+        [Authorize]
         [HttpGet(ApiEndPointConstant.Guide.GuideEndPoint)]
         [ProducesResponseType(typeof(GetGuideResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetGuide(int id)
@@ -25,6 +30,10 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+
+        // View all guides with filter and paging
+
+        [Authorize]
         [HttpGet(ApiEndPointConstant.Guide.GuidesEndPoint)]
         [ProducesResponseType(typeof(IPaginate<GetGuideResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ViewAllGuide([FromQuery] GuideFilter filter, [FromQuery] PagingModel pagingModel)
@@ -33,6 +42,10 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+
+        // Create new guide
+
+        [Authorize(Roles ="admin, staff, sensei")]
         [HttpPost(ApiEndPointConstant.Guide.GuidesEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status201Created)]
         public async Task<IActionResult> CreateGuide([FromBody] GuideInfo request)
@@ -42,6 +55,8 @@ namespace Origami.API.Controllers
             return CreatedAtAction(nameof(GetGuide), new { id }, new { id });
         }
 
+        // Update guide info
+        [Authorize(Roles ="admin, staff, sensei")]
         [HttpPatch(ApiEndPointConstant.Guide.GuideEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateGuideInfo(int id, [FromBody] GuideInfo request)

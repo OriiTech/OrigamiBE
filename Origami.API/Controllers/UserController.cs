@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -16,6 +17,9 @@ namespace Origami.API.Controllers
             _userService = userService;
         }
 
+        // Get user by id
+
+        [Authorize]
         [HttpGet(ApiEndPointConstant.User.UserEndPoint)]
         [ProducesResponseType(typeof(GetUserResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetUser(int id)
@@ -23,6 +27,8 @@ namespace Origami.API.Controllers
             var response = await _userService.GetUserById(id);
             return Ok(response);
         }
+
+        [Authorize(Roles = "admin, staff")]
         [HttpGet(ApiEndPointConstant.User.UsersEndPoint)]
         [ProducesResponseType(typeof(GetUserResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> ViewAllUser([FromQuery] UserFilter filter, [FromQuery] PagingModel pagingModel)
@@ -31,6 +37,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize]
         [HttpPatch(ApiEndPointConstant.User.UserEndPoint)]
         [ProducesResponseType(typeof(GetUserResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateUserInfo(int id, UserInfo request)
@@ -39,6 +46,8 @@ namespace Origami.API.Controllers
             if (!isSuccessful) return Ok("UpdateStatusFailed");
             return Ok("UpdateStatusSuccess");
         }
+
+        [Authorize(Roles = "admin")]
         [HttpPatch(ApiEndPointConstant.User.UpdateUserRoleEndPoint)]
         [ProducesResponseType(typeof(UpdateUserRoleResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateUserRole(int id, [FromBody] UpdateUserRoleRequest request, [FromHeader(Name = "X-Admin-Email")] string? adminEmail)

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -15,6 +16,9 @@ namespace Origami.API.Controllers
             _stepService = stepService;
         }
 
+        // Get step by id
+
+        [Authorize]
         [HttpGet(ApiEndPointConstant.Step.StepEndPoint)]
         [ProducesResponseType(typeof(GetStepResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetStep(int id)
@@ -23,6 +27,10 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+
+        //Get all steps with filter and paging
+
+        [Authorize(Roles = "admin, staff")]
         [HttpGet(ApiEndPointConstant.Step.StepsEndPoint)]
         [ProducesResponseType(typeof(IPaginate<GetStepResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ViewAllStep([FromQuery] StepFilter filter, [FromQuery] PagingModel pagingModel)
@@ -31,6 +39,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // Create new step
+
+        [Authorize]
         [HttpPost(ApiEndPointConstant.Step.StepsEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status201Created)]
         public async Task<IActionResult> CreateStep([FromBody] StepInfo request)
@@ -39,6 +50,9 @@ namespace Origami.API.Controllers
             return CreatedAtAction(nameof(GetStep), new { id }, new { id });
         }
 
+        //Update step info
+
+        [Authorize]
         [HttpPatch(ApiEndPointConstant.Step.StepEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateStepInfo(int id, [FromBody] StepInfo request)

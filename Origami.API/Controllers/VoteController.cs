@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -16,6 +17,7 @@ namespace Origami.API.Controllers
             _voteService = voteService;
         }
 
+        [Authorize]
         [HttpGet(ApiEndPointConstant.Vote.VoteEndPoint)]
         [ProducesResponseType(typeof(GetVoteResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetVote(int id)
@@ -24,6 +26,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize]
         [HttpGet(ApiEndPointConstant.Vote.VotesEndPoint)]
         [ProducesResponseType(typeof(GetVoteResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> ViewAllVotes([FromQuery] VoteFilter filter, [FromQuery] PagingModel pagingModel)
@@ -32,6 +35,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize]
         [HttpPost(ApiEndPointConstant.Vote.VotesEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateVote(VoteInfo request)
@@ -40,6 +44,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize]
         [HttpDelete(ApiEndPointConstant.Vote.VoteEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteVote(int id)

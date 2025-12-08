@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -16,6 +17,10 @@ namespace Origami.API.Controllers
             _submissionService = submissionService;
         }
 
+
+        // Get submission by id
+
+        [Authorize]
         [HttpGet(ApiEndPointConstant.Submission.SubmissionEndPoint)]
         [ProducesResponseType(typeof(GetSubmissionResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetSubmission(int id)
@@ -24,6 +29,10 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+
+        //Get all submissions with filter and paging
+
+        [Authorize(Roles = "admin, staff")]
         [HttpGet(ApiEndPointConstant.Submission.SubmissionsEndPoint)]
         [ProducesResponseType(typeof(GetSubmissionResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> ViewAllSubmissions([FromQuery] SubmissionFilter filter, [FromQuery] PagingModel pagingModel)
@@ -32,6 +41,10 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+
+        // Create new submission
+
+        [Authorize]
         [HttpPost(ApiEndPointConstant.Submission.SubmissionsEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateSubmission(SubmissionInfo request)
@@ -40,6 +53,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        //Upate submission
+
+        [Authorize]
         [HttpPatch(ApiEndPointConstant.Submission.SubmissionEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateSubmission(int id, SubmissionInfo request)
@@ -49,6 +65,9 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+        //Delete submission
+
+        [Authorize]
         [HttpDelete(ApiEndPointConstant.Submission.SubmissionEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteSubmission(int id)

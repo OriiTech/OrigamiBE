@@ -246,15 +246,21 @@ namespace Origami.API.Services.Implement
             var key = jwtSection["Key"];
             var minutes = int.Parse(jwtSection["AccessTokenMinutes"] ?? "60");
 
+            var roleName = user.Role?.RoleName ?? "User";
+
             var claims = new List<Claim>
-    {
-        new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-        new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-        new Claim(ClaimTypes.Name, user.Username ?? string.Empty),
-        new Claim(ClaimTypes.Role, user.RoleId?.ToString() ?? string.Empty),
-        new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
-        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-    };
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+                new Claim(ClaimTypes.Name, user.Username ?? string.Empty),
+
+                new Claim(ClaimTypes.Role, roleName),
+
+                new Claim("role_id", user.RoleId?.ToString() ?? string.Empty),
+
+                new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
 
             var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
             var creds = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -16,6 +17,8 @@ namespace Origami.API.Controllers
             _lessonService = lessonService;
         }
 
+        // Get lesson by id
+        [Authorize]
         [HttpGet(ApiEndPointConstant.Lesson.LessonEndPoint)]
         [ProducesResponseType(typeof(GetLessonResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetLesson(int id)
@@ -24,6 +27,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // View all lessons with filter and paging
+
+        [Authorize]
         [HttpGet(ApiEndPointConstant.Lesson.LessonsEndPoint)]
         [ProducesResponseType(typeof(GetLessonResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> ViewAllLessons([FromQuery] LessonFilter filter, [FromQuery] PagingModel pagingModel)
@@ -32,6 +38,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // Create new lesson
+
+        [Authorize(Roles = "admin, staff, sensei")]
         [HttpPost(ApiEndPointConstant.Lesson.LessonsEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateLesson(LessonInfo request)
@@ -40,6 +49,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // Update lesson info
+
+        [Authorize(Roles = "admin, staff, sensei")]
         [HttpPatch(ApiEndPointConstant.Lesson.LessonEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateLessonInfo(int id, LessonInfo request)
@@ -49,6 +61,9 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+        // Delete lesson
+
+        [Authorize(Roles = "admin, staff, sensei")]
         [HttpDelete(ApiEndPointConstant.Lesson.LessonEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteLesson(int id)

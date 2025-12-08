@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -18,6 +19,9 @@ namespace Origami.API.Controllers
             _commentService = commentService;
         }
 
+        // Create new comment
+
+        [Authorize]
         [HttpPost(ApiEndPointConstant.Comment.CommentsEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateComment(CommentInfo request)
@@ -26,6 +30,8 @@ namespace Origami.API.Controllers
             return Ok(new { CommentId = id });
         }
 
+        // Get comment by id
+        [Authorize]
         [HttpGet(ApiEndPointConstant.Comment.CommentEndPoint)]
         [ProducesResponseType(typeof(GetCommentResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetComment(int id)
@@ -34,7 +40,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // View all comments with filter and paging
 
+        [Authorize(Roles ="admin,staff")]
         [HttpGet(ApiEndPointConstant.Comment.CommentsEndPoint)]
         [ProducesResponseType(typeof(IPaginate<GetCommentResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ViewAllComment([FromQuery] CommentFilter filter, [FromQuery] PagingModel pagingModel)
@@ -43,6 +51,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // Update comment
+
+        [Authorize]
         [HttpPatch(ApiEndPointConstant.Comment.CommentEndPoint)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateComment(int id, CommentUpdateInfo request)
@@ -52,6 +63,9 @@ namespace Origami.API.Controllers
             return Ok("UpdateCommentSuccess");
         }
 
+        // Delete comment
+
+        [Authorize]
         [HttpDelete(ApiEndPointConstant.Comment.CommentEndPoint)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteComment(int id)

@@ -17,6 +17,9 @@ namespace Origami.API.Controllers
             _scoreService = scoreService;
         }
 
+        //Get score by id
+
+        [Authorize]
         [HttpGet(ApiEndPointConstant.Score.ScoreEndPoint)]
         [ProducesResponseType(typeof(GetScoreResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetScore(int id)
@@ -25,6 +28,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        //Get all scores with filter and paging
+
+        [Authorize(Roles ="admin, staff")]
         [HttpGet(ApiEndPointConstant.Score.ScoresEndPoint)]
         [ProducesResponseType(typeof(GetScoreResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> ViewAllScores([FromQuery] ScoreFilter filter, [FromQuery] PagingModel pagingModel)
@@ -32,8 +38,10 @@ namespace Origami.API.Controllers
             var response = await _scoreService.ViewAllScores(filter, pagingModel);
             return Ok(response);
         }
+        
+        //Create new score
 
-        [Authorize(Roles = "2")]
+        [Authorize(Roles = "admin, staff, sensei")]
         [HttpPost(ApiEndPointConstant.Score.ScoresEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateScore(ScoreInfo request)
@@ -42,6 +50,10 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+
+        //Update score
+
+        [Authorize(Roles = "admin, staff, sensei")]
         [HttpPatch(ApiEndPointConstant.Score.ScoreEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateScore(int id, ScoreInfo request)
@@ -51,6 +63,10 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+
+        //Delete score
+
+        [Authorize(Roles = "admin, staff, sensei")]
         [HttpDelete(ApiEndPointConstant.Score.ScoreEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteScore(int id)

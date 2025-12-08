@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -16,6 +17,10 @@ namespace Origami.API.Controllers
             _courseAccessService = courseAccessService;
         }
 
+
+        // Get course access by id
+
+        [Authorize]
         [HttpGet(ApiEndPointConstant.CourseAccess.CourseAccessEndPoint)]
         [ProducesResponseType(typeof(GetCourseAccessResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetCourseAccess(int id)
@@ -24,6 +29,8 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // View all course accesses with filter and paging
+        [Authorize]
         [HttpGet(ApiEndPointConstant.CourseAccess.CourseAccessesEndPoint)]
         [ProducesResponseType(typeof(GetCourseAccessResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> ViewAllCourseAccesses([FromQuery] CourseAccessFilter filter, [FromQuery] PagingModel pagingModel)
@@ -32,6 +39,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // Create new course access
+
+        [Authorize(Roles ="admin, staff")]
         [HttpPost(ApiEndPointConstant.CourseAccess.CourseAccessesEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateCourseAccess(CourseAccessInfo request)
@@ -40,6 +50,8 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        //Delete course access
+        [Authorize(Roles ="admin, staff")]
         [HttpDelete(ApiEndPointConstant.CourseAccess.CourseAccessEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteCourseAccess(int id)

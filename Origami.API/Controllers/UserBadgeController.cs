@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -19,6 +20,7 @@ namespace Origami.API.Controllers
             _userBadgeService = userBadgeService;
         }
 
+        [Authorize(Roles = "admin, staff, sensei")]
         [HttpPost(ApiEndPointConstant.UserBadge.UserBadgesEndPoint)]
         public async Task<IActionResult> GrantBadge(UserBadgeInfo request)
         {
@@ -26,6 +28,7 @@ namespace Origami.API.Controllers
             return Ok(ok ? "GrantBadgeSuccess" : "GrantBadgeFailed");
         }
 
+        [Authorize(Roles = "admin, staff, sensei")]
         [HttpDelete(ApiEndPointConstant.UserBadge.UserBadgeEndPoint)]
         public async Task<IActionResult> RevokeBadge(int userId, int badgeId)
         {
@@ -33,6 +36,7 @@ namespace Origami.API.Controllers
             return Ok(ok ? "RevokeBadgeSuccess" : "RevokeBadgeFailed");
         }
 
+        [Authorize]
         [HttpGet(ApiEndPointConstant.UserBadge.UserBadgeEndPoint)]
         public async Task<IActionResult> GetUserBadge(int userId, int badgeId)
         {
@@ -40,6 +44,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize]
         [HttpGet(ApiEndPointConstant.UserBadge.UserBadgesEndPoint)]
         public async Task<IActionResult> ViewAll([FromQuery] UserBadgeFilter filter, [FromQuery] PagingModel paging)
         {

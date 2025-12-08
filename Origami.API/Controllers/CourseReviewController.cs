@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -16,6 +17,8 @@ namespace Origami.API.Controllers
             _courseReviewService = courseReviewService;
         }
 
+        // Get course review by id
+
         [HttpGet(ApiEndPointConstant.CourseReview.CourseReviewEndPoint)]
         [ProducesResponseType(typeof(GetCourseReviewResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetCourseReview(int id)
@@ -23,6 +26,8 @@ namespace Origami.API.Controllers
             var response = await _courseReviewService.GetCourseReviewById(id);
             return Ok(response);
         }
+
+        // View all course reviews with filter and paging
 
         [HttpGet(ApiEndPointConstant.CourseReview.CourseReviewsEndPoint)]
         [ProducesResponseType(typeof(GetCourseReviewResponse), StatusCodes.Status200OK)]
@@ -32,6 +37,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // Create new course review
+
+        [Authorize]
         [HttpPost(ApiEndPointConstant.CourseReview.CourseReviewsEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateCourseReview(CourseReviewInfo request)
@@ -40,6 +48,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // Update course review
+
+        [Authorize]
         [HttpPatch(ApiEndPointConstant.CourseReview.CourseReviewEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateCourseReview(int id, CourseReviewInfo request)
@@ -49,6 +60,9 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+        // Delete course review
+
+        [Authorize]
         [HttpDelete(ApiEndPointConstant.CourseReview.CourseReviewEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteCourseReview(int id)

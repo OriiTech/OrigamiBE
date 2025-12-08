@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -16,6 +17,8 @@ namespace Origami.API.Controllers
             _categoryService = categoryService;
         }
 
+        //Get category by id
+
         [HttpGet(ApiEndPointConstant.Category.CategoryEndPoint)]
         [ProducesResponseType(typeof(GetCategoryResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetCategory(int id)
@@ -23,6 +26,8 @@ namespace Origami.API.Controllers
             var response = await _categoryService.GetCategoryById(id);
             return Ok(response);
         }
+
+        // View all categories with paging
 
         [HttpGet(ApiEndPointConstant.Category.CategoriesEndPoint)]
         [ProducesResponseType(typeof(GetCategoryResponse), StatusCodes.Status200OK)]
@@ -32,6 +37,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        //Create new category
+
+        [Authorize(Roles ="admin, staff, sensei")]
         [HttpPost(ApiEndPointConstant.Category.CategoriesEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateCategory(CategoryInfo request)
@@ -40,6 +48,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        //Update category info
+
+        [Authorize(Roles = "admin, staff, sensei")]
         [HttpPatch(ApiEndPointConstant.Category.CategoryEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateCategoryInfo(int id, CategoryInfo request)
@@ -49,6 +60,9 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+        //Delete category
+
+        [Authorize(Roles = "admin, staff, sensei")]
         [HttpDelete(ApiEndPointConstant.Category.CategoryEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteCategory(int id)

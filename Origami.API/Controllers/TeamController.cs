@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -16,6 +17,9 @@ namespace Origami.API.Controllers
             _teamService = teamService;
         }
 
+        //Get team by id
+
+        [Authorize]
         [HttpGet(ApiEndPointConstant.Team.TeamEndPoint)]
         [ProducesResponseType(typeof(GetTeamResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetTeam(int id)
@@ -24,6 +28,10 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+
+        //Get all teams with filter and paging
+
+        [Authorize(Roles = "admin, staff")]
         [HttpGet(ApiEndPointConstant.Team.TeamsEndPoint)]
         [ProducesResponseType(typeof(GetTeamResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> ViewAllTeams([FromQuery] TeamFilter filter, [FromQuery] PagingModel pagingModel)
@@ -32,6 +40,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // Create new team
+
+        [Authorize(Roles ="admin, staff,sensei")]
         [HttpPost(ApiEndPointConstant.Team.TeamsEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateTeam(TeamInfo request)
@@ -40,6 +51,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // Update team info
+
+        [Authorize(Roles = "admin, staff,sensei")]
         [HttpPatch(ApiEndPointConstant.Team.TeamEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateTeamInfo(int id, TeamInfo request)
@@ -49,6 +63,9 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+        // Delete team
+
+        [Authorize(Roles = "admin, staff,sensei")]
         [HttpDelete(ApiEndPointConstant.Team.TeamEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteTeam(int id)

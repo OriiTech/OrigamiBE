@@ -17,6 +17,10 @@ namespace Origami.API.Controllers
             _teamMemberService = teamMemberService;
         }
 
+
+        // Get team member by id
+
+        [Authorize]
         [HttpGet(ApiEndPointConstant.TeamMember.TeamMemberEndPoint)]
         [ProducesResponseType(typeof(GetTeamMemberResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetTeamMember(int id)
@@ -25,6 +29,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // Get all team members with filter and paging
+
+        [Authorize]
         [HttpGet(ApiEndPointConstant.TeamMember.TeamMembersEndPoint)]
         [ProducesResponseType(typeof(GetTeamMemberResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> ViewAllTeamMembers([FromQuery] TeamMemberFilter filter, [FromQuery] PagingModel pagingModel)
@@ -33,7 +40,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = "admin, staff, sensei")]
         [HttpPost(ApiEndPointConstant.TeamMember.TeamMembersEndPoint + "/bulk")]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> BulkAddMembers([FromBody] BulkAddTeamMemberRequest request)
@@ -42,7 +49,7 @@ namespace Origami.API.Controllers
             return Ok($"{added} members added");
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = "admin, staff, sensei")]
         [HttpPatch(ApiEndPointConstant.TeamMember.TeamMemberEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateTeamMember(int id, TeamMemberInfo request)
@@ -52,7 +59,7 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = "admin, staff, sensei")]
         [HttpDelete(ApiEndPointConstant.TeamMember.TeamMemberEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteTeamMember(int id)

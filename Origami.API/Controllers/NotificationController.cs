@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -15,7 +16,9 @@ namespace Origami.API.Controllers
             _notificationService = notificationService;
         }
 
-        //Get all 
+        //Get all notifications with filter and paging
+
+        [Authorize]
         [HttpGet(ApiEndPointConstant.Notification.NotificationsEndPoint)]
         [ProducesResponseType(typeof(GetNotificationResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> ViewAllNotifications([FromQuery] NotificationFilter filter, [FromQuery] PagingModel pagingModel)
@@ -25,6 +28,8 @@ namespace Origami.API.Controllers
         }
 
         //Create new notification
+
+        [Authorize(Roles ="admin, staff")]
         [HttpPost(ApiEndPointConstant.Notification.NotificationsEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateNotification(NotificationInfo request)
@@ -34,6 +39,8 @@ namespace Origami.API.Controllers
         }
 
         //Delete notification by id
+
+        [Authorize(Roles ="admin, staff")]
         [HttpDelete(ApiEndPointConstant.Notification.NotificationEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteNotification(int id)

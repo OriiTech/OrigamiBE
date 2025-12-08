@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -16,6 +17,8 @@ namespace Origami.API.Controllers
             _challengeService = challengeService;
         }
 
+        // Get challenge by id
+
         [HttpGet(ApiEndPointConstant.Challenge.ChallengeEndPoint)]
         [ProducesResponseType(typeof(GetChallengeResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetChallenge(int id)
@@ -23,6 +26,8 @@ namespace Origami.API.Controllers
             var response = await _challengeService.GetChallengeById(id);
             return Ok(response);
         }
+
+        // View all challenges with filter and paging
 
         [HttpGet(ApiEndPointConstant.Challenge.ChallengesEndPoint)]
         [ProducesResponseType(typeof(GetChallengeResponse), StatusCodes.Status200OK)]
@@ -32,6 +37,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // Create new challenge
+
+        [Authorize(Roles = "admin, staff, sensei")]
         [HttpPost(ApiEndPointConstant.Challenge.ChallengesEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateChallenge(ChallengeInfo request)
@@ -40,6 +48,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // Update challenge info
+
+        [Authorize(Roles = "admin, staff, sensei")]
         [HttpPatch(ApiEndPointConstant.Challenge.ChallengeEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateChallengeInfo(int id, ChallengeInfo request)
@@ -49,6 +60,9 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+        // Delete challenge
+
+        [Authorize(Roles = "admin, staff, sensei")]
         [HttpDelete(ApiEndPointConstant.Challenge.ChallengeEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteChallenge(int id)

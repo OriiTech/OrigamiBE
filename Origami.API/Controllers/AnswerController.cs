@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -16,6 +17,9 @@ namespace Origami.API.Controllers
             _answerService = answerService;
         }
 
+        // Get answer by id
+
+        [Authorize]
         [HttpGet(ApiEndPointConstant.Answer.AnswerEndPoint)]
         [ProducesResponseType(typeof(GetAnswerResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAnswer(int id)
@@ -24,6 +28,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // View all answers with filter and paging
+
+        [Authorize]
         [HttpGet(ApiEndPointConstant.Answer.AnswersEndPoint)]
         [ProducesResponseType(typeof(GetAnswerResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> ViewAllAnswers([FromQuery] AnswerFilter filter, [FromQuery] PagingModel pagingModel)
@@ -32,6 +39,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // Create new answer
+
+        [Authorize]
         [HttpPost(ApiEndPointConstant.Answer.AnswersEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateAnswer(AnswerInfo request)
@@ -40,6 +50,9 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        // Update answer info
+
+        [Authorize]
         [HttpPatch(ApiEndPointConstant.Answer.AnswerEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateAnswerInfo(int id, AnswerInfo request)
@@ -49,6 +62,9 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+        // Delete answer
+
+        [Authorize]
         [HttpDelete(ApiEndPointConstant.Answer.AnswerEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteAnswer(int id)
