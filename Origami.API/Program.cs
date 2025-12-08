@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection;
 using Origami.API.Extensions;
 using Origami.API.Middlewares;
@@ -14,6 +15,10 @@ if (!string.IsNullOrEmpty(port))
 }
 // Add services to the container.
 var authBuilder = builder.Services.AddJwtValidation(builder.Configuration);
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+});
 builder.Services.AddConfigSwagger();
 builder.Services.AddCors(options =>
 {
@@ -58,6 +63,7 @@ if (swaggerEnabled)
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+app.UseForwardedHeaders();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseCors(CorsConstant.PolicyName);
 app.UseHttpsRedirection();
