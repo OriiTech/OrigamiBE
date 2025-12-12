@@ -11,6 +11,7 @@ using Origami.DataTier.Repository.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Npgsql;
 
 namespace Origami.API.Services.Implement
 {
@@ -141,33 +142,61 @@ namespace Origami.API.Services.Implement
                 throw new BadHttpRequestException("EmailRequired");
 
             var userRepo = _unitOfWork.GetRepository<User>();
+            
+            // Dùng ToLower() để so sánh email giống như Register method
+            var normalizedEmail = email.ToLower();
             User? user = await userRepo.GetFirstOrDefaultAsync(
-                predicate: x => x.Email == email,
+                predicate: x => x.Email.ToLower() == normalizedEmail,
                 include: q => q.Include(u => u.Role),
                 asNoTracking: false
             );
 
             if (user == null)
             {
+                // Tạo user mới
                 user = new User
                 {
                     Username = string.IsNullOrEmpty(username) ? email : username,
-                    Email = email,
+                    Email = email, // Lưu email gốc từ Google
                     Password = PasswordUtil.HashPassword(Guid.NewGuid().ToString()),
                     RoleId = 1,
                     CreatedAt = DateTime.UtcNow
                 };
 
                 await userRepo.InsertAsync(user);
-                if (await _unitOfWork.CommitAsync() <= 0)
-                    throw new BadHttpRequestException("RegisterFailed");
-
-                // reload with role for response
-                user = await userRepo.GetFirstOrDefaultAsync(
-                    predicate: x => x.UserId == user.UserId,
-                    include: q => q.Include(u => u.Role),
-                    asNoTracking: true
-                ) ?? throw new BadHttpRequestException("UserNotFoundAfterGoogle");
+                try
+                {
+                    if (await _unitOfWork.CommitAsync() <= 0)
+                        throw new BadHttpRequestException("RegisterFailed");
+                    
+                    // Nếu commit thành công, reload user với Role
+                    user = await userRepo.GetFirstOrDefaultAsync(
+                        predicate: x => x.UserId == user.UserId,
+                        include: q => q.Include(u => u.Role),
+                        asNoTracking: true
+                    ) ?? throw new BadHttpRequestException("UserNotFoundAfterGoogle");
+                }
+                catch (DbUpdateException ex) when (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23505")
+                {
+                    // Duplicate key - có thể do race condition hoặc duplicate email
+                    // Thử load lại user bằng email
+                    _logger.LogWarning(ex, "Duplicate key error when creating user with email {Email}, attempting to reload", email);
+                    
+                    user = await userRepo.GetFirstOrDefaultAsync(
+                        predicate: x => x.Email.ToLower() == normalizedEmail,
+                        include: q => q.Include(u => u.Role),
+                        asNoTracking: true
+                    );
+                    
+                    if (user == null)
+                    {
+                        // Nếu vẫn không tìm thấy, có thể là duplicate key trên primary key (sequence issue)
+                        // Hoặc có vấn đề khác
+                        _logger.LogError("User not found after duplicate key exception for email {Email}", email);
+                        throw new BadHttpRequestException("RegisterFailed");
+                    }
+                    // Nếu tìm thấy user, tiếp tục với user này
+                }
             }
             else if (user.Role == null)
             {
