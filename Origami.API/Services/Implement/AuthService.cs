@@ -74,7 +74,8 @@ namespace Origami.API.Services.Implement
                 Email = request.Email,
                 Password = hashedPassword,
                 RoleId = request.RoleId ?? 1,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
 
             await userRepo.InsertAsync(newUser);
@@ -160,7 +161,8 @@ namespace Origami.API.Services.Implement
                     Email = email, // Lưu email gốc từ Google
                     Password = PasswordUtil.HashPassword(Guid.NewGuid().ToString()),
                     RoleId = 1,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 };
 
                 await userRepo.InsertAsync(user);
