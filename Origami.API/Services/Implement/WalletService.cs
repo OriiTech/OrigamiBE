@@ -135,7 +135,7 @@ public class WalletService : BaseService<WalletService>, IWalletService
         {
             ReceiverWalletId = wallet.WalletId,
             Amount = request.Amount, // Số tiền VND
-            TransactionType = "TOP_UP",
+            TransactionType = "deposit", // Sử dụng "deposit" thay vì "TOP_UP" để phù hợp với database constraint
             Status = "PENDING",
             CreatedAt = DateTime.UtcNow
         };
