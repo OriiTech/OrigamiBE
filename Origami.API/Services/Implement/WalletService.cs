@@ -8,6 +8,7 @@ using Origami.DataTier.Paginate;
 using Origami.DataTier.Repository.Interfaces;
 using System.Security.Cryptography;
 using System.Text;
+using Npgsql;
 
 namespace Origami.API.Services.Implement;
 
@@ -51,13 +52,21 @@ public class WalletService : BaseService<WalletService>, IWalletService
                 await walletRepo.InsertAsync(wallet);
                 await _unitOfWork.CommitAsync();
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23505")
             {
-                // Wallet có thể đã được tạo bởi request khác, query lại
+                // Duplicate key - có thể do race condition hoặc duplicate user_id
+                // Thử load lại wallet
+                _logger.LogWarning(ex, "Duplicate key error when creating wallet for user {UserId}, attempting to reload", userId);
+                
                 wallet = await walletRepo.GetFirstOrDefaultAsync(
                     predicate: x => x.UserId == userId,
                     asNoTracking: true
                 ) ?? throw new BadHttpRequestException("FailedToCreateWallet");
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Error creating wallet for user {UserId}", userId);
+                throw new BadHttpRequestException("FailedToCreateWallet");
             }
         }
 
@@ -102,13 +111,21 @@ public class WalletService : BaseService<WalletService>, IWalletService
                 await walletRepo.InsertAsync(wallet);
                 await _unitOfWork.CommitAsync();
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23505")
             {
-                // Wallet có thể đã được tạo bởi request khác, query lại
+                // Duplicate key - có thể do race condition hoặc duplicate user_id
+                // Thử load lại wallet
+                _logger.LogWarning(ex, "Duplicate key error when creating wallet for user {UserId}, attempting to reload", userId);
+                
                 wallet = await walletRepo.GetFirstOrDefaultAsync(
                     predicate: x => x.UserId == userId,
                     asNoTracking: false
                 ) ?? throw new BadHttpRequestException("FailedToCreateWallet");
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Error creating wallet for user {UserId}", userId);
+                throw new BadHttpRequestException("FailedToCreateWallet");
             }
         }
 

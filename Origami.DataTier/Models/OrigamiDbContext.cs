@@ -956,6 +956,8 @@ public partial class OrigamiDbContext : DbContext
 
             entity.ToTable("Wallet");
 
+            entity.HasIndex(e => e.UserId, "UQ__Wallet__user_id").IsUnique();
+
             entity.Property(e => e.WalletId).HasColumnName("wallet_id").UseIdentityColumn();
             entity.Property(e => e.Balance)
                 .HasDefaultValue(0m)
