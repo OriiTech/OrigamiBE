@@ -956,7 +956,7 @@ public partial class OrigamiDbContext : DbContext
 
             entity.ToTable("Wallet");
 
-            entity.Property(e => e.WalletId).HasColumnName("wallet_id");
+            entity.Property(e => e.WalletId).HasColumnName("wallet_id").UseIdentityColumn();
             entity.Property(e => e.Balance)
                 .HasDefaultValue(0m)
                 .HasColumnType("decimal(18, 2)")
