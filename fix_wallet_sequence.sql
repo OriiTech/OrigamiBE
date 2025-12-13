@@ -94,3 +94,45 @@ FROM pg_sequences s
 WHERE s.sequencename = split_part(pg_get_serial_sequence('"Wallet"', 'wallet_id'), '.', 2)
   AND s.schemaname = split_part(pg_get_serial_sequence('"Wallet"', 'wallet_id'), '.', 1);
 
+-- ========================================
+-- FIX SEQUENCE CHO TRANSACTION TABLE
+-- ========================================
+
+-- 5. Fix sequence cho Transaction nếu bị lệch
+DO $$
+DECLARE
+    seq_name TEXT;
+    max_id INTEGER;
+    new_seq_val INTEGER;
+BEGIN
+    -- Tìm sequence name
+    seq_name := pg_get_serial_sequence('"Transaction"', 'transaction_id');
+    
+    IF seq_name IS NULL THEN
+        RAISE EXCEPTION 'Không tìm thấy sequence cho Transaction.transaction_id';
+    END IF;
+    
+    -- Lấy MAX transaction_id hiện tại
+    SELECT COALESCE(MAX(transaction_id), 0) INTO max_id FROM "Transaction";
+    
+    -- Set sequence về max_id + 1
+    new_seq_val := max_id + 1;
+    EXECUTE format('SELECT setval(%L, %s, false)', seq_name, new_seq_val);
+    
+    RAISE NOTICE 'Đã set sequence % về giá trị %', seq_name, new_seq_val;
+END $$;
+
+-- 6. Kiểm tra sequence Transaction
+SELECT 
+    pg_get_serial_sequence('"Transaction"', 'transaction_id') as sequence_name,
+    s.last_value as sequence_last_value,
+    (SELECT MAX(transaction_id) FROM "Transaction") as max_transaction_id,
+    CASE 
+        WHEN s.last_value <= COALESCE((SELECT MAX(transaction_id) FROM "Transaction"), 0)
+        THEN 'WARNING: Có thể gây duplicate key!'
+        ELSE 'OK'
+    END as status
+FROM pg_sequences s
+WHERE s.sequencename = split_part(pg_get_serial_sequence('"Transaction"', 'transaction_id'), '.', 2)
+  AND s.schemaname = split_part(pg_get_serial_sequence('"Transaction"', 'transaction_id'), '.', 1);
+

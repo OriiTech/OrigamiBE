@@ -837,7 +837,7 @@ public partial class OrigamiDbContext : DbContext
 
             entity.HasIndex(e => e.OrderId, "IX_Transaction_OrderId");
 
-            entity.Property(e => e.TransactionId).HasColumnName("transaction_id");
+            entity.Property(e => e.TransactionId).HasColumnName("transaction_id").UseIdentityColumn();
             entity.Property(e => e.Amount)
                 .HasColumnType("decimal(18, 2)")
                 .HasColumnName("amount");
