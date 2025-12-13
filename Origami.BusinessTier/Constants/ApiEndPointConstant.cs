@@ -189,5 +189,16 @@ namespace Origami.BusinessTier.Constants
             public const string UserBadgesEndPoint = ApiEndpoint + "/user-badges";
             public const string UserBadgeEndPoint = UserBadgesEndPoint + "/{id}";
         }
+
+        //Wallet
+        public static class Wallet
+        {
+            public const string WalletsEndPoint = ApiEndpoint + "/wallets";
+            public const string WalletEndPoint = WalletsEndPoint + "/{id}";
+            public const string MyWalletEndPoint = WalletsEndPoint + "/my-wallet";
+            public const string TopUpEndPoint = WalletsEndPoint + "/top-up";
+            public const string TransactionsEndPoint = WalletsEndPoint + "/transactions";
+            public const string VnpayCallbackEndPoint = WalletsEndPoint + "/vnpay-callback";
+        }
     }
 }

@@ -1,0 +1,73 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Origami.API.Services.Interfaces;
+using Origami.BusinessTier.Constants;
+using Origami.BusinessTier.Payload;
+using Origami.BusinessTier.Payload.Wallet;
+
+namespace Origami.API.Controllers;
+
+[ApiController]
+[Authorize]
+public class WalletController : BaseController<WalletController>
+{
+    private readonly IWalletService _walletService;
+
+    public WalletController(ILogger<WalletController> logger, IWalletService walletService) : base(logger)
+    {
+        _walletService = walletService;
+    }
+
+    [HttpGet(ApiEndPointConstant.Wallet.MyWalletEndPoint)]
+    [ProducesResponseType(typeof(GetWalletResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyWallet()
+    {
+        var response = await _walletService.GetMyWallet();
+        return Ok(response);
+    }
+
+    [HttpGet(ApiEndPointConstant.Wallet.WalletEndPoint)]
+    [ProducesResponseType(typeof(GetWalletResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetWalletById(int id)
+    {
+        var response = await _walletService.GetWalletById(id);
+        return Ok(response);
+    }
+
+    [HttpPost(ApiEndPointConstant.Wallet.TopUpEndPoint)]
+    [ProducesResponseType(typeof(TopUpResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> TopUpWallet([FromBody] TopUpRequest request)
+    {
+        var response = await _walletService.TopUpWallet(request);
+        return Ok(response);
+    }
+
+    [HttpGet(ApiEndPointConstant.Wallet.VnpayCallbackEndPoint)]
+    public async Task<IActionResult> VnpayCallback()
+    {
+        var queryParams = Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString());
+        var result = await _walletService.ProcessVnpayCallback(queryParams);
+        
+        if (result)
+            return Ok(new { success = true, message = "Payment successful" });
+        else
+            return Ok(new { success = false, message = "Payment failed" });
+    }
+
+    [HttpGet(ApiEndPointConstant.Wallet.TransactionsEndPoint)]
+    [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyTransactions([FromQuery] TransactionFilter filter, [FromQuery] PagingModel pagingModel)
+    {
+        var response = await _walletService.GetMyTransactions(filter, pagingModel);
+        return Ok(response);
+    }
+
+    [HttpGet(ApiEndPointConstant.Wallet.TransactionsEndPoint + "/all")]
+    [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllTransactions([FromQuery] TransactionFilter filter, [FromQuery] PagingModel pagingModel)
+    {
+        var response = await _walletService.GetAllTransactions(filter, pagingModel);
+        return Ok(response);
+    }
+}
+
