@@ -876,7 +876,7 @@ public partial class OrigamiDbContext : DbContext
 
             entity.HasIndex(e => e.Email, "UQ__User__AB6E6164B7307E3C").IsUnique();
 
-            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id").UseIdentityColumn();
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
