@@ -274,18 +274,27 @@ public class WalletService : BaseService<WalletService>, IWalletService
             ["vnp_CreateDate"] = DateTime.Now.ToString("yyyyMMddHHmmss")
         };
 
-        // Sắp xếp và tạo query string
-        var queryString = string.Join("&", vnp_Params
+        // Loại bỏ các params rỗng trước khi tạo signature
+        var filteredParams = vnp_Params
+            .Where(x => !string.IsNullOrEmpty(x.Value))
             .OrderBy(x => x.Key)
+            .ToDictionary(x => x.Key, x => x.Value);
+
+        // Tạo query string cho signature và URL (VNPay yêu cầu URL encode khi tạo signature)
+        var queryString = string.Join("&", filteredParams
             .Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value)}"));
 
-        // Tạo hash
+        // Tạo signData từ query string đã URL encode + hashSecret
         var signData = queryString;
         if (!string.IsNullOrEmpty(hashSecret))
         {
             signData += $"&{hashSecret}";
         }
-        var vnp_SecureHash = HmacSHA512(hashSecret ?? "", signData);
+
+        // Tạo hash bằng HMAC SHA256 (VNPay sandbox thường dùng SHA256)
+        var vnp_SecureHash = HmacSHA256(hashSecret ?? "", signData);
+        
+        // Thêm signature vào query string
         queryString += $"&vnp_SecureHash={vnp_SecureHash}";
 
         return $"{url}?{queryString}";
@@ -300,11 +309,20 @@ public class WalletService : BaseService<WalletService>, IWalletService
             return false;
 
         var vnp_SecureHash = vnpayData["vnp_SecureHash"];
-        vnpayData.Remove("vnp_SecureHash");
-        vnpayData.Remove("vnp_SecureHashType");
+        
+        // Tạo bản copy để không ảnh hưởng đến original data
+        var paramsForSign = new Dictionary<string, string>(vnpayData);
+        paramsForSign.Remove("vnp_SecureHash");
+        paramsForSign.Remove("vnp_SecureHashType");
 
-        var signData = string.Join("&", vnpayData
+        // Loại bỏ params rỗng và sắp xếp
+        var filteredParams = paramsForSign
+            .Where(x => !string.IsNullOrEmpty(x.Value))
             .OrderBy(x => x.Key)
+            .ToDictionary(x => x.Key, x => x.Value);
+
+        // Tạo signData với URL encode (phải khớp với cách tạo signature khi tạo URL)
+        var signData = string.Join("&", filteredParams
             .Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value)}"));
 
         if (!string.IsNullOrEmpty(hashSecret))
@@ -312,7 +330,8 @@ public class WalletService : BaseService<WalletService>, IWalletService
             signData += $"&{hashSecret}";
         }
 
-        var checkSum = HmacSHA512(hashSecret ?? "", signData);
+        // Verify signature bằng SHA256 (phải khớp với cách tạo signature)
+        var checkSum = HmacSHA256(hashSecret ?? "", signData);
         return checkSum.Equals(vnp_SecureHash, StringComparison.InvariantCultureIgnoreCase);
     }
 
@@ -322,6 +341,22 @@ public class WalletService : BaseService<WalletService>, IWalletService
         byte[] keyBytes = Encoding.UTF8.GetBytes(key);
         byte[] inputBytes = Encoding.UTF8.GetBytes(inputData);
         using (var hmac = new HMACSHA512(keyBytes))
+        {
+            byte[] hashValue = hmac.ComputeHash(inputBytes);
+            foreach (byte theByte in hashValue)
+            {
+                hash.Append(theByte.ToString("x2"));
+            }
+        }
+        return hash.ToString();
+    }
+
+    private string HmacSHA256(string key, string inputData)
+    {
+        var hash = new StringBuilder();
+        byte[] keyBytes = Encoding.UTF8.GetBytes(key);
+        byte[] inputBytes = Encoding.UTF8.GetBytes(inputData);
+        using (var hmac = new HMACSHA256(keyBytes))
         {
             byte[] hashValue = hmac.ComputeHash(inputBytes);
             foreach (byte theByte in hashValue)
