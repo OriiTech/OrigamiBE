@@ -280,21 +280,27 @@ public class WalletService : BaseService<WalletService>, IWalletService
             .OrderBy(x => x.Key)
             .ToDictionary(x => x.Key, x => x.Value);
 
-        // Tạo query string cho signature và URL (VNPay yêu cầu URL encode khi tạo signature)
-        var queryString = string.Join("&", filteredParams
-            .Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value)}"));
+        // Tạo query string cho signature (KHÔNG URL encode - dùng giá trị gốc)
+        var signData = string.Join("&", filteredParams
+            .Select(x => $"{x.Key}={x.Value}"));
 
-        // Tạo signData từ query string đã URL encode + hashSecret
-        var signData = queryString;
+        // Thêm hashSecret vào cuối để tạo signature
         if (!string.IsNullOrEmpty(hashSecret))
         {
             signData += $"&{hashSecret}";
         }
 
-        // Tạo hash bằng HMAC SHA256 (VNPay sandbox thường dùng SHA256)
-        var vnp_SecureHash = HmacSHA256(hashSecret ?? "", signData);
+        // Log để debug (chỉ log trong development)
+        _logger.LogDebug("VNPay SignData: {SignData}", signData);
+
+        // Tạo hash bằng HMAC SHA512 (VNPay thường dùng SHA512)
+        var vnp_SecureHash = HmacSHA512(hashSecret ?? "", signData);
         
-        // Thêm signature vào query string
+        _logger.LogDebug("VNPay SecureHash: {SecureHash}", vnp_SecureHash);
+        
+        // Tạo query string cho URL (có URL encode)
+        var queryString = string.Join("&", filteredParams
+            .Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value)}"));
         queryString += $"&vnp_SecureHash={vnp_SecureHash}";
 
         return $"{url}?{queryString}";
@@ -321,17 +327,18 @@ public class WalletService : BaseService<WalletService>, IWalletService
             .OrderBy(x => x.Key)
             .ToDictionary(x => x.Key, x => x.Value);
 
-        // Tạo signData với URL encode (phải khớp với cách tạo signature khi tạo URL)
+        // Tạo signData KHÔNG URL encode (phải khớp với cách tạo signature khi tạo URL)
+        // VNPay gửi về các giá trị đã được decode, nên dùng giá trị gốc
         var signData = string.Join("&", filteredParams
-            .Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value)}"));
+            .Select(x => $"{x.Key}={x.Value}"));
 
         if (!string.IsNullOrEmpty(hashSecret))
         {
             signData += $"&{hashSecret}";
         }
 
-        // Verify signature bằng SHA256 (phải khớp với cách tạo signature)
-        var checkSum = HmacSHA256(hashSecret ?? "", signData);
+        // Verify signature bằng SHA512 (phải khớp với cách tạo signature)
+        var checkSum = HmacSHA512(hashSecret ?? "", signData);
         return checkSum.Equals(vnp_SecureHash, StringComparison.InvariantCultureIgnoreCase);
     }
 
