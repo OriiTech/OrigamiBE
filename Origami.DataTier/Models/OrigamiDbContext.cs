@@ -65,6 +65,8 @@ public partial class OrigamiDbContext : DbContext
 
     public virtual DbSet<Submission> Submissions { get; set; }
 
+    public virtual DbSet<TargetLevel> TargetLevels { get; set; }
+
     public virtual DbSet<Team> Teams { get; set; }
 
     public virtual DbSet<TeamMember> TeamMembers { get; set; }
@@ -206,7 +208,7 @@ public partial class OrigamiDbContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Comment__user_id__03F0984C");
-                entity.HasKey(e => e.CommentId);
+            entity.HasKey(e => e.CommentId);
 
             entity.HasOne(d => d.ParentComment)
                 .WithMany(p => p.Replies)
@@ -238,11 +240,29 @@ public partial class OrigamiDbContext : DbContext
             entity.ToTable("Course");
 
             entity.Property(e => e.CourseId).HasColumnName("course_id");
+            entity.Property(e => e.Bestseller)
+                .HasDefaultValue(false)
+                .HasColumnName("bestseller");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.Language)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("language");
             entity.Property(e => e.Price)
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("price");
+            entity.Property(e => e.PublishedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("published_at");
             entity.Property(e => e.TeacherId).HasColumnName("teacher_id");
+            entity.Property(e => e.ThumbnailUrl)
+                .HasMaxLength(255)
+                .IsUnicode(false)
+                .HasColumnName("thumbnail_url");
             entity.Property(e => e.Title)
                 .HasMaxLength(255)
                 .HasColumnName("title");
@@ -250,6 +270,23 @@ public partial class OrigamiDbContext : DbContext
             entity.HasOne(d => d.Teacher).WithMany(p => p.Courses)
                 .HasForeignKey(d => d.TeacherId)
                 .HasConstraintName("FK__Course__teacher___05D8E0BE");
+
+            entity.HasMany(d => d.Levels).WithMany(p => p.Courses)
+                .UsingEntity<Dictionary<string, object>>(
+                    "CourseTargetLevel",
+                    r => r.HasOne<TargetLevel>().WithMany()
+                        .HasForeignKey("LevelId")
+                        .HasConstraintName("FK_Course_Target_Level"),
+                    l => l.HasOne<Course>().WithMany()
+                        .HasForeignKey("CourseId")
+                        .HasConstraintName("FK_Course_Target_Course"),
+                    j =>
+                    {
+                        j.HasKey("CourseId", "LevelId").HasName("PK_Course_Target");
+                        j.ToTable("Course_target_level");
+                        j.IndexerProperty<int>("CourseId").HasColumnName("course_id");
+                        j.IndexerProperty<int>("LevelId").HasColumnName("level_id");
+                    });
         });
 
         modelBuilder.Entity<CourseAccess>(entity =>
@@ -740,6 +777,18 @@ public partial class OrigamiDbContext : DbContext
                 .HasConstraintName("FK_Submission_Team");
         });
 
+        modelBuilder.Entity<TargetLevel>(entity =>
+        {
+            entity.HasKey(e => e.LevelId).HasName("PK__Target_l__0346164327CCF59B");
+
+            entity.ToTable("Target_level");
+
+            entity.Property(e => e.LevelId).HasColumnName("level_id");
+            entity.Property(e => e.Name)
+                .HasMaxLength(100)
+                .HasColumnName("name");
+        });
+
         modelBuilder.Entity<Team>(entity =>
         {
             entity.HasKey(e => e.TeamId).HasName("PK__Team__123AE7B91E7AA665");
@@ -797,6 +846,7 @@ public partial class OrigamiDbContext : DbContext
                 .HasMaxLength(20)
                 .HasColumnName("status");
             entity.Property(e => e.TicketTypeId).HasColumnName("ticket_type_id");
+            entity.Property(e => e.Title).HasMaxLength(255);
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
             entity.HasOne(d => d.TicketType).WithMany(p => p.Tickets)
@@ -868,6 +918,10 @@ public partial class OrigamiDbContext : DbContext
             entity.HasIndex(e => e.Email, "UQ__User__AB6E6164B7307E3C").IsUnique();
 
             entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.AvatarUrl)
+                .HasMaxLength(255)
+                .IsUnicode(false)
+                .HasColumnName("avatar_url");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")

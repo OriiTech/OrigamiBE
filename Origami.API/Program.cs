@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Origami.API.Extensions;
 using Origami.API.Middlewares;
 using Origami.BusinessTier.Constants;
+using Origami.DataTier.Models;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +15,11 @@ if (!string.IsNullOrEmpty(port))
     builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 }
 // Add services to the container.
+builder.Services.AddDbContext<OrigamiDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+    )
+);
 var authBuilder = builder.Services.AddJwtValidation(builder.Configuration);
 builder.Services.AddConfigSwagger();
 builder.Services.AddCors(options =>

@@ -19,6 +19,8 @@ public partial class User
 
     public DateTime? UpdatedAt { get; set; }
 
+    public string? AvatarUrl { get; set; }
+
     public virtual ICollection<Answer> Answers { get; set; } = new List<Answer>();
 
     public virtual ICollection<Challenge> Challenges { get; set; } = new List<Challenge>();
