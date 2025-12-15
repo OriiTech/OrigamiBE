@@ -39,6 +39,18 @@ public partial class OrigamiDbContext : DbContext
 
     public virtual DbSet<GuideAccess> GuideAccesses { get; set; }
 
+    public virtual DbSet<GuideCreator> GuideCreators { get; set; }
+
+    public virtual DbSet<GuidePreview> GuidePreviews { get; set; }
+
+    public virtual DbSet<GuidePromoPhoto> GuidePromoPhotos { get; set; }
+
+    public virtual DbSet<GuideRating> GuideRatings { get; set; }
+
+    public virtual DbSet<GuideRequirement> GuideRequirements { get; set; }
+
+    public virtual DbSet<GuideView> GuideViews { get; set; }
+
     public virtual DbSet<Instructor> Instructors { get; set; }
 
     public virtual DbSet<Leaderboard> Leaderboards { get; set; }
@@ -74,6 +86,8 @@ public partial class OrigamiDbContext : DbContext
     public virtual DbSet<Score> Scores { get; set; }
 
     public virtual DbSet<Step> Steps { get; set; }
+
+    public virtual DbSet<StepTip> StepTips { get; set; }
 
     public virtual DbSet<Submission> Submissions { get; set; }
 
@@ -158,6 +172,10 @@ public partial class OrigamiDbContext : DbContext
             entity.Property(e => e.CategoryName)
                 .HasMaxLength(100)
                 .HasColumnName("category_name");
+            entity.Property(e => e.Type)
+                .HasMaxLength(20)
+                .HasDefaultValue("topic")
+                .HasColumnName("type");
         });
 
         modelBuilder.Entity<Challenge>(entity =>
@@ -401,18 +419,27 @@ public partial class OrigamiDbContext : DbContext
 
             entity.Property(e => e.GuideId).HasColumnName("guide_id");
             entity.Property(e => e.AuthorId).HasColumnName("author_id");
+            entity.Property(e => e.Bestseller).HasColumnName("bestseller");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
             entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.IsNew)
+                .HasDefaultValue(true)
+                .HasColumnName("is_new");
             entity.Property(e => e.OrigamiId).HasColumnName("OrigamiID");
+            entity.Property(e => e.PaidOnly).HasColumnName("paid_only");
             entity.Property(e => e.Price)
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("price");
+            entity.Property(e => e.Subtitle)
+                .HasMaxLength(255)
+                .HasColumnName("subtitle");
             entity.Property(e => e.Title)
                 .HasMaxLength(255)
                 .HasColumnName("title");
+            entity.Property(e => e.Trending).HasColumnName("trending");
             entity.Property(e => e.UpdatedAt)
                 .HasColumnType("datetime")
                 .HasColumnName("updated_at");
@@ -472,6 +499,140 @@ public partial class OrigamiDbContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_GuideAccess_User");
+        });
+
+        modelBuilder.Entity<GuideCreator>(entity =>
+        {
+            entity.HasKey(e => e.CreatorId).HasName("PK__GuideCre__E58291C0E2B63828");
+
+            entity.ToTable("GuideCreator");
+
+            entity.Property(e => e.CreatorId)
+                .ValueGeneratedNever()
+                .HasColumnName("creator_id");
+            entity.Property(e => e.Bio).HasColumnName("bio");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("created_at");
+
+            entity.HasOne(d => d.Creator).WithOne(p => p.GuideCreator)
+                .HasForeignKey<GuideCreator>(d => d.CreatorId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GuideCreator_User");
+        });
+
+        modelBuilder.Entity<GuidePreview>(entity =>
+        {
+            entity.HasKey(e => e.GuideId).HasName("PK__GuidePre__04A82241309D3DD3");
+
+            entity.ToTable("GuidePreview");
+
+            entity.Property(e => e.GuideId)
+                .ValueGeneratedNever()
+                .HasColumnName("guide_id");
+            entity.Property(e => e.VideoAvailable).HasColumnName("video_available");
+            entity.Property(e => e.VideoUrl)
+                .HasMaxLength(500)
+                .HasColumnName("video_url");
+
+            entity.HasOne(d => d.Guide).WithOne(p => p.GuidePreview)
+                .HasForeignKey<GuidePreview>(d => d.GuideId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GuidePreview_Guide");
+        });
+
+        modelBuilder.Entity<GuidePromoPhoto>(entity =>
+        {
+            entity.HasKey(e => e.PhotoId).HasName("PK__GuidePro__CB48C83D225AFC13");
+
+            entity.ToTable("GuidePromoPhoto");
+
+            entity.Property(e => e.PhotoId).HasColumnName("photo_id");
+            entity.Property(e => e.DisplayOrder).HasColumnName("display_order");
+            entity.Property(e => e.GuideId).HasColumnName("guide_id");
+            entity.Property(e => e.Url)
+                .HasMaxLength(500)
+                .HasColumnName("url");
+
+            entity.HasOne(d => d.Guide).WithMany(p => p.GuidePromoPhotos)
+                .HasForeignKey(d => d.GuideId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GuidePromoPhoto_Guide");
+        });
+
+        modelBuilder.Entity<GuideRating>(entity =>
+        {
+            entity.HasKey(e => new { e.GuideId, e.UserId });
+
+            entity.ToTable("GuideRating");
+
+            entity.Property(e => e.GuideId).HasColumnName("guide_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Rating).HasColumnName("rating");
+
+            entity.HasOne(d => d.Guide).WithMany(p => p.GuideRatings)
+                .HasForeignKey(d => d.GuideId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GuideRating_Guide");
+
+            entity.HasOne(d => d.User).WithMany(p => p.GuideRatings)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GuideRating_User");
+        });
+
+        modelBuilder.Entity<GuideRequirement>(entity =>
+        {
+            entity.HasKey(e => e.GuideId).HasName("PK__GuideReq__04A82241AC1E2312");
+
+            entity.ToTable("GuideRequirement");
+
+            entity.Property(e => e.GuideId)
+                .ValueGeneratedNever()
+                .HasColumnName("guide_id");
+            entity.Property(e => e.Colors)
+                .HasMaxLength(255)
+                .HasColumnName("colors");
+            entity.Property(e => e.PaperSize)
+                .HasMaxLength(50)
+                .HasColumnName("paper_size");
+            entity.Property(e => e.PaperType)
+                .HasMaxLength(100)
+                .HasColumnName("paper_type");
+            entity.Property(e => e.Tools)
+                .HasMaxLength(255)
+                .HasColumnName("tools");
+
+            entity.HasOne(d => d.Guide).WithOne(p => p.GuideRequirement)
+                .HasForeignKey<GuideRequirement>(d => d.GuideId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GuideRequirement_Guide");
+        });
+
+        modelBuilder.Entity<GuideView>(entity =>
+        {
+            entity.HasKey(e => e.ViewId).HasName("PK__GuideVie__B5A34EE29544E775");
+
+            entity.ToTable("GuideView");
+
+            entity.Property(e => e.ViewId).HasColumnName("view_id");
+            entity.Property(e => e.GuideId).HasColumnName("guide_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.ViewedAt)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("viewed_at");
+
+            entity.HasOne(d => d.Guide).WithMany(p => p.GuideViews)
+                .HasForeignKey(d => d.GuideId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_GuideView_Guide");
+
+            entity.HasOne(d => d.User).WithMany(p => p.GuideViews)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK_GuideView_User");
         });
 
         modelBuilder.Entity<Instructor>(entity =>
@@ -944,6 +1105,23 @@ public partial class OrigamiDbContext : DbContext
                 .HasForeignKey(d => d.GuideId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Steps__guide_id__1BC821DD");
+        });
+
+        modelBuilder.Entity<StepTip>(entity =>
+        {
+            entity.HasKey(e => e.TipId).HasName("PK__StepTip__377877B272A6894D");
+
+            entity.ToTable("StepTip");
+
+            entity.Property(e => e.TipId).HasColumnName("tip_id");
+            entity.Property(e => e.Content).HasColumnName("content");
+            entity.Property(e => e.DisplayOrder).HasColumnName("display_order");
+            entity.Property(e => e.StepId).HasColumnName("step_id");
+
+            entity.HasOne(d => d.Step).WithMany(p => p.StepTips)
+                .HasForeignKey(d => d.StepId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_StepTip_Step");
         });
 
         modelBuilder.Entity<Submission>(entity =>

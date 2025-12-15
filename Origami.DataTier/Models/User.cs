@@ -37,6 +37,12 @@ public partial class User
 
     public virtual ICollection<GuideAccess> GuideAccesses { get; set; } = new List<GuideAccess>();
 
+    public virtual GuideCreator? GuideCreator { get; set; }
+
+    public virtual ICollection<GuideRating> GuideRatings { get; set; } = new List<GuideRating>();
+
+    public virtual ICollection<GuideView> GuideViews { get; set; } = new List<GuideView>();
+
     public virtual ICollection<Guide> Guides { get; set; } = new List<Guide>();
 
     public virtual Instructor? Instructor { get; set; }

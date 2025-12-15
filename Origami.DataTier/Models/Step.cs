@@ -24,4 +24,6 @@ public partial class Step
     public DateTime? UpdatedAt { get; set; }
 
     public virtual Guide Guide { get; set; } = null!;
+
+    public virtual ICollection<StepTip> StepTips { get; set; } = new List<StepTip>();
 }
