@@ -282,7 +282,7 @@ public class WalletService : BaseService<WalletService>, IWalletService
 
         // Tạo signData: sort key asc, key=value với value đã URL-encode
         var signData = string.Join("&", filteredParams
-            .Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value)}"));
+            .Select(x => $"{x.Key}={WebUtility.UrlEncode(x.Value)}"));
 
         // Tạo hash bằng HMAC SHA512 với secret key
         var vnp_SecureHash = HmacSHA512(hashSecret ?? "", signData);
@@ -293,7 +293,7 @@ public class WalletService : BaseService<WalletService>, IWalletService
 
         // Tạo query string cho URL (có URL encode)
         var queryString = string.Join("&", filteredParams
-            .Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value)}"));
+            .Select(x => $"{x.Key}={WebUtility.UrlEncode(x.Value)}"));
 
         return $"{url}?{queryString}";
     }
@@ -321,7 +321,7 @@ public class WalletService : BaseService<WalletService>, IWalletService
 
         // Tạo signData với URL-encode value (phải khớp với lúc tạo URL)
         var signData = string.Join("&", filteredParams
-            .Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value)}"));
+            .Select(x => $"{x.Key}={WebUtility.UrlEncode(x.Value)}"));
 
         // Verify signature bằng SHA512
         var checkSum = HmacSHA512(hashSecret ?? "", signData);
