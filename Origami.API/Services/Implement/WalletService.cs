@@ -280,28 +280,20 @@ public class WalletService : BaseService<WalletService>, IWalletService
             .OrderBy(x => x.Key)
             .ToDictionary(x => x.Key, x => x.Value);
 
-        // Tạo query string cho signature (KHÔNG URL encode - dùng giá trị gốc)
+        // Tạo signData: sort key asc, key=value với value đã URL-encode
         var signData = string.Join("&", filteredParams
-            .Select(x => $"{x.Key}={x.Value}"));
+            .Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value)}"));
 
-        // Thêm hashSecret vào cuối để tạo signature
-        if (!string.IsNullOrEmpty(hashSecret))
-        {
-            signData += $"&{hashSecret}";
-        }
-
-        // Log để debug (chỉ log trong development)
-        _logger.LogDebug("VNPay SignData: {SignData}", signData);
-
-        // Tạo hash bằng HMAC SHA512 (VNPay thường dùng SHA512)
+        // Tạo hash bằng HMAC SHA512 với secret key
         var vnp_SecureHash = HmacSHA512(hashSecret ?? "", signData);
-        
-        _logger.LogDebug("VNPay SecureHash: {SecureHash}", vnp_SecureHash);
-        
+
+        // Thêm signature type theo chuẩn VNPay
+        filteredParams["vnp_SecureHashType"] = "HMACSHA512";
+        filteredParams["vnp_SecureHash"] = vnp_SecureHash;
+
         // Tạo query string cho URL (có URL encode)
         var queryString = string.Join("&", filteredParams
             .Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value)}"));
-        queryString += $"&vnp_SecureHash={vnp_SecureHash}";
 
         return $"{url}?{queryString}";
     }
@@ -327,17 +319,11 @@ public class WalletService : BaseService<WalletService>, IWalletService
             .OrderBy(x => x.Key)
             .ToDictionary(x => x.Key, x => x.Value);
 
-        // Tạo signData KHÔNG URL encode (phải khớp với cách tạo signature khi tạo URL)
-        // VNPay gửi về các giá trị đã được decode, nên dùng giá trị gốc
+        // Tạo signData với URL-encode value (phải khớp với lúc tạo URL)
         var signData = string.Join("&", filteredParams
-            .Select(x => $"{x.Key}={x.Value}"));
+            .Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value)}"));
 
-        if (!string.IsNullOrEmpty(hashSecret))
-        {
-            signData += $"&{hashSecret}";
-        }
-
-        // Verify signature bằng SHA512 (phải khớp với cách tạo signature)
+        // Verify signature bằng SHA512
         var checkSum = HmacSHA512(hashSecret ?? "", signData);
         return checkSum.Equals(vnp_SecureHash, StringComparison.InvariantCultureIgnoreCase);
     }
