@@ -130,5 +130,4 @@ public class WalletService : BaseService<WalletService>, IWalletService
     }
 
 }
-}
 
