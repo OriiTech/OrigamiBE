@@ -6,25 +6,20 @@ using Origami.BusinessTier.Payload.Wallet;
 using Origami.DataTier.Models;
 using Origami.DataTier.Paginate;
 using Origami.DataTier.Repository.Interfaces;
-using System.Security.Cryptography;
-using System.Text;
 using Npgsql;
+using System.Text;
 
 namespace Origami.API.Services.Implement;
 
 public class WalletService : BaseService<WalletService>, IWalletService
 {
-    private readonly IConfiguration _configuration;
-
     public WalletService(
         IUnitOfWork<OrigamiDbContext> unitOfWork,
         ILogger<WalletService> logger,
         IMapper mapper,
-        IHttpContextAccessor httpContextAccessor,
-        IConfiguration configuration
+        IHttpContextAccessor httpContextAccessor
     ) : base(unitOfWork, logger, mapper, httpContextAccessor)
     {
-        _configuration = configuration;
     }
 
     public async Task<GetWalletResponse> GetMyWallet()
@@ -83,122 +78,6 @@ public class WalletService : BaseService<WalletService>, IWalletService
         return _mapper.Map<GetWalletResponse>(wallet);
     }
 
-    public async Task<TopUpResponse> TopUpWallet(TopUpRequest request)
-    {
-        if (request.Amount <= 0)
-            throw new BadHttpRequestException("InvalidAmount");
-
-        var userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
-
-        // Lấy hoặc tạo wallet
-        var walletRepo = _unitOfWork.GetRepository<Wallet>();
-        var wallet = await walletRepo.GetFirstOrDefaultAsync(
-            predicate: x => x.UserId == userId,
-            asNoTracking: false
-        );
-
-        if (wallet == null)
-        {
-            try
-            {
-                wallet = new Wallet
-                {
-                    UserId = userId,
-                    Balance = 0,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-                await walletRepo.InsertAsync(wallet);
-                await _unitOfWork.CommitAsync();
-            }
-            catch (DbUpdateException ex) when (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23505")
-            {
-                // Duplicate key - có thể do race condition hoặc duplicate user_id
-                // Thử load lại wallet
-                _logger.LogWarning(ex, "Duplicate key error when creating wallet for user {UserId}, attempting to reload", userId);
-                
-                wallet = await walletRepo.GetFirstOrDefaultAsync(
-                    predicate: x => x.UserId == userId,
-                    asNoTracking: false
-                ) ?? throw new BadHttpRequestException("FailedToCreateWallet");
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Error creating wallet for user {UserId}", userId);
-                throw new BadHttpRequestException("FailedToCreateWallet");
-            }
-        }
-
-        // Tạo transaction với status PENDING
-        var transactionRepo = _unitOfWork.GetRepository<Transaction>();
-        var transaction = new Transaction
-        {
-            ReceiverWalletId = wallet.WalletId,
-            Amount = request.Amount, // Số tiền VND
-            TransactionType = "deposit", // Sử dụng "deposit" thay vì "TOP_UP" để phù hợp với database constraint
-            Status = "PENDING",
-            CreatedAt = DateTime.UtcNow
-        };
-        await transactionRepo.InsertAsync(transaction);
-        await _unitOfWork.CommitAsync();
-
-        // Tạo payment URL với VNPAY
-        var paymentUrl = CreateVnpayPaymentUrl(transaction.TransactionId, request.Amount, request.ReturnUrl);
-
-        return new TopUpResponse
-        {
-            PaymentUrl = paymentUrl,
-            TransactionCode = transaction.TransactionId.ToString()
-        };
-    }
-
-    public async Task<bool> ProcessVnpayCallback(Dictionary<string, string> vnpayData)
-    {
-        // Verify signature từ VNPAY
-        if (!VerifyVnpaySignature(vnpayData))
-            throw new BadHttpRequestException("InvalidSignature");
-
-        var transactionId = int.Parse(vnpayData["vnp_TxnRef"]);
-        var responseCode = vnpayData["vnp_ResponseCode"];
-        var amount = decimal.Parse(vnpayData["vnp_Amount"]) / 100; // VNPAY trả về số tiền * 100
-
-        var transactionRepo = _unitOfWork.GetRepository<Transaction>();
-        var transaction = await transactionRepo.GetFirstOrDefaultAsync(
-            predicate: x => x.TransactionId == transactionId,
-            asNoTracking: false
-        ) ?? throw new BadHttpRequestException("TransactionNotFound");
-
-        // Nếu đã xử lý rồi thì không xử lý lại
-        if (transaction.Status == "SUCCESS")
-            return true;
-
-        if (responseCode == "00") // Thành công
-        {
-            // Cập nhật transaction
-            transaction.Status = "SUCCESS";
-
-            // Cập nhật balance của wallet
-            var walletRepo = _unitOfWork.GetRepository<Wallet>();
-            var wallet = await walletRepo.GetFirstOrDefaultAsync(
-                predicate: x => x.WalletId == transaction.ReceiverWalletId,
-                asNoTracking: false
-            ) ?? throw new BadHttpRequestException("WalletNotFound");
-
-            // Nạp tiền: 1 VND = 1 xu
-            wallet.Balance = (wallet.Balance ?? 0) + amount;
-            wallet.UpdatedAt = DateTime.UtcNow;
-
-            await _unitOfWork.CommitAsync();
-            return true;
-        }
-        else
-        {
-            transaction.Status = "FAILED";
-            await _unitOfWork.CommitAsync();
-            return false;
-        }
-    }
-
     public async Task<IPaginate<TransactionResponse>> GetMyTransactions(TransactionFilter filter, PagingModel pagingModel)
     {
         var userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
@@ -250,119 +129,6 @@ public class WalletService : BaseService<WalletService>, IWalletService
         return response;
     }
 
-    private string CreateVnpayPaymentUrl(int transactionId, decimal amount, string? returnUrl)
-    {
-        var vnpayConfig = _configuration.GetSection("VNPay");
-        var tmnCode = vnpayConfig["TmnCode"];
-        var hashSecret = vnpayConfig["HashSecret"];
-        var url = vnpayConfig["Url"];
-        var returnUrlConfig = vnpayConfig["ReturnUrl"];
-
-        var vnp_Params = new Dictionary<string, string>
-        {
-            ["vnp_Version"] = "2.1.0",
-            ["vnp_Command"] = "pay",
-            ["vnp_TmnCode"] = tmnCode ?? "",
-            ["vnp_Amount"] = ((long)(amount * 100)).ToString(), // VNPAY yêu cầu số tiền * 100
-            ["vnp_CurrCode"] = "VND",
-            ["vnp_TxnRef"] = transactionId.ToString(),
-            ["vnp_OrderInfo"] = $"Nạp tiền vào ví - Transaction {transactionId}",
-            ["vnp_OrderType"] = "other",
-            ["vnp_Locale"] = "vn",
-            ["vnp_ReturnUrl"] = returnUrl ?? returnUrlConfig ?? "",
-            ["vnp_IpAddr"] = GetIpAddress(),
-            ["vnp_CreateDate"] = DateTime.Now.ToString("yyyyMMddHHmmss")
-        };
-
-        // Loại bỏ các params rỗng trước khi tạo signature
-        var filteredParams = vnp_Params
-            .Where(x => !string.IsNullOrEmpty(x.Value))
-            .OrderBy(x => x.Key)
-            .ToDictionary(x => x.Key, x => x.Value);
-
-        // Tạo signData: sort key asc, key=value với value đã URL-encode
-        var signData = string.Join("&", filteredParams
-            .Select(x => $"{x.Key}={WebUtility.UrlEncode(x.Value)}"));
-
-        // Tạo hash bằng HMAC SHA512 với secret key
-        var vnp_SecureHash = HmacSHA512(hashSecret ?? "", signData);
-
-        // Thêm signature type theo chuẩn VNPay
-        filteredParams["vnp_SecureHashType"] = "HMACSHA512";
-        filteredParams["vnp_SecureHash"] = vnp_SecureHash;
-
-        // Tạo query string cho URL (có URL encode)
-        var queryString = string.Join("&", filteredParams
-            .Select(x => $"{x.Key}={WebUtility.UrlEncode(x.Value)}"));
-
-        return $"{url}?{queryString}";
-    }
-
-    private bool VerifyVnpaySignature(Dictionary<string, string> vnpayData)
-    {
-        var vnpayConfig = _configuration.GetSection("VNPay");
-        var hashSecret = vnpayConfig["HashSecret"];
-
-        if (!vnpayData.ContainsKey("vnp_SecureHash"))
-            return false;
-
-        var vnp_SecureHash = vnpayData["vnp_SecureHash"];
-        
-        // Tạo bản copy để không ảnh hưởng đến original data
-        var paramsForSign = new Dictionary<string, string>(vnpayData);
-        paramsForSign.Remove("vnp_SecureHash");
-        paramsForSign.Remove("vnp_SecureHashType");
-
-        // Loại bỏ params rỗng và sắp xếp
-        var filteredParams = paramsForSign
-            .Where(x => !string.IsNullOrEmpty(x.Value))
-            .OrderBy(x => x.Key)
-            .ToDictionary(x => x.Key, x => x.Value);
-
-        // Tạo signData với URL-encode value (phải khớp với lúc tạo URL)
-        var signData = string.Join("&", filteredParams
-            .Select(x => $"{x.Key}={WebUtility.UrlEncode(x.Value)}"));
-
-        // Verify signature bằng SHA512
-        var checkSum = HmacSHA512(hashSecret ?? "", signData);
-        return checkSum.Equals(vnp_SecureHash, StringComparison.InvariantCultureIgnoreCase);
-    }
-
-    private string HmacSHA512(string key, string inputData)
-    {
-        var hash = new StringBuilder();
-        byte[] keyBytes = Encoding.UTF8.GetBytes(key);
-        byte[] inputBytes = Encoding.UTF8.GetBytes(inputData);
-        using (var hmac = new HMACSHA512(keyBytes))
-        {
-            byte[] hashValue = hmac.ComputeHash(inputBytes);
-            foreach (byte theByte in hashValue)
-            {
-                hash.Append(theByte.ToString("x2"));
-            }
-        }
-        return hash.ToString();
-    }
-
-    private string HmacSHA256(string key, string inputData)
-    {
-        var hash = new StringBuilder();
-        byte[] keyBytes = Encoding.UTF8.GetBytes(key);
-        byte[] inputBytes = Encoding.UTF8.GetBytes(inputData);
-        using (var hmac = new HMACSHA256(keyBytes))
-        {
-            byte[] hashValue = hmac.ComputeHash(inputBytes);
-            foreach (byte theByte in hashValue)
-            {
-                hash.Append(theByte.ToString("x2"));
-            }
-        }
-        return hash.ToString();
-    }
-
-    private string GetIpAddress()
-    {
-        return _httpContextAccessor?.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "127.0.0.1";
-    }
+}
 }
 

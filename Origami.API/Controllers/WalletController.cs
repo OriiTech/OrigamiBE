@@ -34,26 +34,6 @@ public class WalletController : BaseController<WalletController>
         return Ok(response);
     }
 
-    [HttpPost(ApiEndPointConstant.Wallet.TopUpEndPoint)]
-    [ProducesResponseType(typeof(TopUpResponse), StatusCodes.Status200OK)]
-    public async Task<IActionResult> TopUpWallet([FromBody] TopUpRequest request)
-    {
-        var response = await _walletService.TopUpWallet(request);
-        return Ok(response);
-    }
-
-    [HttpGet(ApiEndPointConstant.Wallet.VnpayCallbackEndPoint)]
-    public async Task<IActionResult> VnpayCallback()
-    {
-        var queryParams = Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString());
-        var result = await _walletService.ProcessVnpayCallback(queryParams);
-        
-        if (result)
-            return Ok(new { success = true, message = "Payment successful" });
-        else
-            return Ok(new { success = false, message = "Payment failed" });
-    }
-
     [HttpGet(ApiEndPointConstant.Wallet.TransactionsEndPoint)]
     [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyTransactions([FromQuery] TransactionFilter filter, [FromQuery] PagingModel pagingModel)
