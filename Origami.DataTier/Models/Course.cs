@@ -37,5 +37,7 @@ public partial class Course
 
     public virtual User? Teacher { get; set; }
 
+    public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
+
     public virtual ICollection<TargetLevel> Levels { get; set; } = new List<TargetLevel>();
 }

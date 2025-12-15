@@ -19,5 +19,7 @@ public partial class Question
 
     public virtual Course? Course { get; set; }
 
+    public virtual ICollection<QuestionAnswer> QuestionAnswers { get; set; } = new List<QuestionAnswer>();
+
     public virtual User? User { get; set; }
 }

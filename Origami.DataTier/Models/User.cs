@@ -39,13 +39,19 @@ public partial class User
 
     public virtual ICollection<Guide> Guides { get; set; } = new List<Guide>();
 
+    public virtual Instructor? Instructor { get; set; }
+
     public virtual ICollection<Leaderboard> Leaderboards { get; set; } = new List<Leaderboard>();
+
+    public virtual ICollection<LectureProgress> LectureProgresses { get; set; } = new List<LectureProgress>();
 
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 
     public virtual ICollection<Origami> Origamis { get; set; } = new List<Origami>();
+
+    public virtual ICollection<QuestionAnswer> QuestionAnswers { get; set; } = new List<QuestionAnswer>();
 
     public virtual ICollection<Question> Questions { get; set; } = new List<Question>();
 
