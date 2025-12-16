@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
@@ -23,6 +24,20 @@ namespace Origami.API.Controllers
         {
             var response = await _guideService.GetGuideById(id);
             return Ok(response);
+        }
+        [HttpGet(ApiEndPointConstant.Guide.GuideDetailEndPoint)]
+        [ProducesResponseType(typeof(GetGuideDetailResponse), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetGuideDetail(int id)
+        {
+            var response = await _guideService.GetGuideDetailById(id);
+            return Ok(response);
+        }
+        [HttpPost(ApiEndPointConstant.Guide.GuideViewEndPoint)]
+        [Authorize]
+        public async Task<IActionResult> IncreaseGuideView(int id)
+        {
+            await _guideService.IncreaseView(id);
+            return NoContent();
         }
 
         [HttpGet(ApiEndPointConstant.Guide.GuidesEndPoint)]
