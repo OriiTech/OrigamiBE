@@ -51,8 +51,6 @@ public partial class User
 
     public virtual ICollection<Origami> Origamis { get; set; } = new List<Origami>();
 
-    public virtual ICollection<QuestionAnswer> QuestionAnswers { get; set; } = new List<QuestionAnswer>();
-
     public virtual ICollection<Question> Questions { get; set; } = new List<Question>();
 
     public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();

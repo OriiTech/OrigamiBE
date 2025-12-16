@@ -27,5 +27,7 @@ public partial class Lecture
 
     public virtual Lesson Lesson { get; set; } = null!;
 
+    public virtual ICollection<Question> Questions { get; set; } = new List<Question>();
+
     public virtual ICollection<Resource> Resources { get; set; } = new List<Resource>();
 }

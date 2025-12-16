@@ -67,8 +67,6 @@ public partial class OrigamiDbContext : DbContext
 
     public virtual DbSet<Question> Questions { get; set; }
 
-    public virtual DbSet<QuestionAnswer> QuestionAnswers { get; set; }
-
     public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
 
     public virtual DbSet<Resource> Resources { get; set; }
@@ -834,41 +832,25 @@ public partial class OrigamiDbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.LectureId).HasColumnName("lecture_id");
+            entity.Property(e => e.TargetType)
+                .HasMaxLength(20)
+                .HasDefaultValue("Course")
+                .HasColumnName("target_type");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
             entity.HasOne(d => d.Course).WithMany(p => p.Questions)
                 .HasForeignKey(d => d.CourseId)
                 .HasConstraintName("FK__Question__course__17036CC0");
 
+            entity.HasOne(d => d.Lecture).WithMany(p => p.Questions)
+                .HasForeignKey(d => d.LectureId)
+                .HasConstraintName("FK_Question_Lecture");
+
             entity.HasOne(d => d.User).WithMany(p => p.Questions)
                 .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Question__user_i__17F790F9");
-        });
-
-        modelBuilder.Entity<QuestionAnswer>(entity =>
-        {
-            entity.HasKey(e => e.AnswerId).HasName("PK__Question__3372431834FD2E79");
-
-            entity.ToTable("Question_answer");
-
-            entity.Property(e => e.AnswerId).HasColumnName("answer_id");
-            entity.Property(e => e.Comment).HasColumnName("comment");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("created_at");
-            entity.Property(e => e.QuestionId).HasColumnName("question_id");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
-
-            entity.HasOne(d => d.Question).WithMany(p => p.QuestionAnswers)
-                .HasForeignKey(d => d.QuestionId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_QA_Question");
-
-            entity.HasOne(d => d.User).WithMany(p => p.QuestionAnswers)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_QA_User");
         });
 
         modelBuilder.Entity<RefreshToken>(entity =>
