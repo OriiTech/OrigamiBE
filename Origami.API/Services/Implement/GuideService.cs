@@ -132,8 +132,51 @@ namespace Origami.API.Services.Implement
 
             return response;
         }
+        public async Task<IPaginate<GetGuideCardResponse>> ViewAllGuideCard(GuideCardFilter filter, PagingModel pagingModel)
+        {
+            var repo = _unitOfWork.GetRepository<Guide>();
+            Expression<Func<Guide, bool>> predicate = x =>
+                (string.IsNullOrEmpty(filter.Title) || x.Title.Contains(filter.Title)) &&
 
+                (string.IsNullOrEmpty(filter.CreatorName) ||
+                    x.Author.Username.Contains(filter.CreatorName)) &&
 
+                (!filter.CategoryId.HasValue ||
+                    x.Categories.Any(c => c.CategoryId == filter.CategoryId)) &&
 
-    }
+                (!filter.MinPrice.HasValue || x.Price >= filter.MinPrice) &&
+                (!filter.MaxPrice.HasValue || x.Price <= filter.MaxPrice) &&
+
+                (!filter.PaidOnly.HasValue || x.PaidOnly == filter.PaidOnly) &&
+
+                (!filter.Bestseller.HasValue || x.Bestseller == filter.Bestseller) &&
+                (!filter.Trending.HasValue || x.Trending == filter.Trending) &&
+                (!filter.IsNew.HasValue || x.IsNew == filter.IsNew) &&
+
+                (!filter.MinRating.HasValue ||
+                    x.GuideRatings.Any() &&
+                    x.GuideRatings.Average(r => r.Rating) >= filter.MinRating) &&
+
+                (!filter.MinViews.HasValue ||
+                    x.GuideViews.Count >= filter.MinViews);
+
+            var response = await repo.GetPagingListAsync(
+                selector: x => _mapper.Map<GetGuideCardResponse>(x),
+                predicate: predicate,
+                include: q => q
+                    .Include(x => x.Author)
+                     .ThenInclude(a => a.UserProfile)
+                     .Include(x => x.Categories)
+                     .Include(x => x.GuideViews)
+                     .Include(x => x.GuideRatings)
+                     .Include(x => x.GuidePromoPhotos),
+                     orderBy: q => q.OrderByDescending(x => x.CreatedAt),
+                     page: pagingModel.page,
+                     size: pagingModel.size
+             );
+
+            return response;
+        }
+
+        }
 }

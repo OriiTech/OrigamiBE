@@ -32,7 +32,13 @@ namespace Origami.API.Controllers
             var response = await _guideService.ViewAllGuide(filter, pagingModel);
             return Ok(response);
         }
-
+        [HttpGet(ApiEndPointConstant.Guide.GuideCardsEndPoint)]
+        [ProducesResponseType(typeof(IPaginate<GetGuideCardResponse>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ViewAllGuideCard([FromQuery] GuideCardFilter filter, [FromQuery] PagingModel pagingModel)
+        {
+            var response = await _guideService.ViewAllGuideCard(filter, pagingModel);
+            return Ok(response);
+        }
         [HttpPost(ApiEndPointConstant.Guide.GuidesEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status201Created)]
         public async Task<IActionResult> CreateGuide([FromBody] GuideInfo request)
@@ -50,5 +56,6 @@ namespace Origami.API.Controllers
             if (!isSuccessful) return Ok("UpdateStatusFailed");
             return Ok("UpdateStatusSuccess");
         }
+
     }
 }

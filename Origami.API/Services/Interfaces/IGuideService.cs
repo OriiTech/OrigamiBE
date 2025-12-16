@@ -10,5 +10,6 @@ namespace Origami.API.Services.Interfaces
         Task<GetGuideResponse> GetGuideById(int id);
         Task<bool> UpdateGuideInfo(int id, GuideInfo request);
         Task<IPaginate<GetGuideResponse>> ViewAllGuide(GuideFilter filter, PagingModel pagingModel);
+        Task<IPaginate<GetGuideCardResponse>> ViewAllGuideCard(GuideCardFilter filter, PagingModel pagingModel);
     }
 }
