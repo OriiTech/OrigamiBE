@@ -83,8 +83,8 @@ public class VnPayService : BaseService<VnPayService>, IVnPayService
         await transactionRepo.InsertAsync(transaction);
         await _unitOfWork.CommitAsync();
 
-        // Tạo payment URL với VNPAY
-        var paymentUrl = CreateVnpayPaymentUrl(transaction.TransactionId, request.Amount, request.ReturnUrl);
+        // Tạo payment URL với VNPAY (dùng ReturnUrl mặc định từ cấu hình)
+        var paymentUrl = CreateVnpayPaymentUrl(transaction.TransactionId, request.Amount, null);
 
         return new TopUpResponse
         {
