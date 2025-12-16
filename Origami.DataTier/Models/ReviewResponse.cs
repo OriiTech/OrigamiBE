@@ -9,13 +9,13 @@ public partial class ReviewResponse
 
     public int ReviewId { get; set; }
 
-    public int InstructorId { get; set; }
-
     public string Comment { get; set; } = null!;
 
     public DateTime CreatedAt { get; set; }
 
-    public virtual Instructor Instructor { get; set; } = null!;
+    public int? UserId { get; set; }
 
     public virtual CourseReview Review { get; set; } = null!;
+
+    public virtual User? User { get; set; }
 }

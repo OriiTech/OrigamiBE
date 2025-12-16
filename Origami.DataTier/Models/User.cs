@@ -19,8 +19,6 @@ public partial class User
 
     public DateTime? UpdatedAt { get; set; }
 
-    public string? AvatarUrl { get; set; }
-
     public virtual ICollection<Answer> Answers { get; set; } = new List<Answer>();
 
     public virtual ICollection<Challenge> Challenges { get; set; } = new List<Challenge>();
@@ -37,15 +35,11 @@ public partial class User
 
     public virtual ICollection<GuideAccess> GuideAccesses { get; set; } = new List<GuideAccess>();
 
-    public virtual GuideCreator? GuideCreator { get; set; }
-
     public virtual ICollection<GuideRating> GuideRatings { get; set; } = new List<GuideRating>();
 
     public virtual ICollection<GuideView> GuideViews { get; set; } = new List<GuideView>();
 
     public virtual ICollection<Guide> Guides { get; set; } = new List<Guide>();
-
-    public virtual Instructor? Instructor { get; set; }
 
     public virtual ICollection<Leaderboard> Leaderboards { get; set; } = new List<Leaderboard>();
 
@@ -65,6 +59,8 @@ public partial class User
 
     public virtual ICollection<Revenue> Revenues { get; set; } = new List<Revenue>();
 
+    public virtual ICollection<ReviewResponse> ReviewResponses { get; set; } = new List<ReviewResponse>();
+
     public virtual Role? Role { get; set; }
 
     public virtual ICollection<Score> Scores { get; set; } = new List<Score>();
@@ -76,6 +72,8 @@ public partial class User
     public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
 
     public virtual ICollection<UserBadge> UserBadges { get; set; } = new List<UserBadge>();
+
+    public virtual UserProfile? UserProfile { get; set; }
 
     public virtual ICollection<Vote> Votes { get; set; } = new List<Vote>();
 

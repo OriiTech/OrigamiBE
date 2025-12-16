@@ -39,8 +39,6 @@ public partial class OrigamiDbContext : DbContext
 
     public virtual DbSet<GuideAccess> GuideAccesses { get; set; }
 
-    public virtual DbSet<GuideCreator> GuideCreators { get; set; }
-
     public virtual DbSet<GuidePreview> GuidePreviews { get; set; }
 
     public virtual DbSet<GuidePromoPhoto> GuidePromoPhotos { get; set; }
@@ -50,8 +48,6 @@ public partial class OrigamiDbContext : DbContext
     public virtual DbSet<GuideRequirement> GuideRequirements { get; set; }
 
     public virtual DbSet<GuideView> GuideViews { get; set; }
-
-    public virtual DbSet<Instructor> Instructors { get; set; }
 
     public virtual DbSet<Leaderboard> Leaderboards { get; set; }
 
@@ -106,6 +102,8 @@ public partial class OrigamiDbContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     public virtual DbSet<UserBadge> UserBadges { get; set; }
+
+    public virtual DbSet<UserProfile> UserProfiles { get; set; }
 
     public virtual DbSet<Vote> Votes { get; set; }
 
@@ -234,16 +232,14 @@ public partial class OrigamiDbContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Comment__guide_i__02FC7413");
 
+            entity.HasOne(d => d.Parent).WithMany(p => p.InverseParent)
+                .HasForeignKey(d => d.ParentId)
+                .HasConstraintName("FK_Comment_Parent");
+
             entity.HasOne(d => d.User).WithMany(p => p.Comments)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Comment__user_id__03F0984C");
-            entity.HasKey(e => e.CommentId);
-
-            entity.HasOne(d => d.ParentComment)
-                .WithMany(p => p.Replies)
-                .HasForeignKey(d => d.ParentId)
-                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Commission>(entity =>
@@ -501,26 +497,6 @@ public partial class OrigamiDbContext : DbContext
                 .HasConstraintName("FK_GuideAccess_User");
         });
 
-        modelBuilder.Entity<GuideCreator>(entity =>
-        {
-            entity.HasKey(e => e.CreatorId).HasName("PK__GuideCre__E58291C0E2B63828");
-
-            entity.ToTable("GuideCreator");
-
-            entity.Property(e => e.CreatorId)
-                .ValueGeneratedNever()
-                .HasColumnName("creator_id");
-            entity.Property(e => e.Bio).HasColumnName("bio");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(sysdatetime())")
-                .HasColumnName("created_at");
-
-            entity.HasOne(d => d.Creator).WithOne(p => p.GuideCreator)
-                .HasForeignKey<GuideCreator>(d => d.CreatorId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_GuideCreator_User");
-        });
-
         modelBuilder.Entity<GuidePreview>(entity =>
         {
             entity.HasKey(e => e.GuideId).HasName("PK__GuidePre__04A82241309D3DD3");
@@ -633,32 +609,6 @@ public partial class OrigamiDbContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.GuideViews)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("FK_GuideView_User");
-        });
-
-        modelBuilder.Entity<Instructor>(entity =>
-        {
-            entity.HasKey(e => e.InstructorId).HasName("PK__Instruct__A1EF56E8D80692EE");
-
-            entity.ToTable("Instructor");
-
-            entity.Property(e => e.InstructorId)
-                .ValueGeneratedNever()
-                .HasColumnName("instructor_id");
-            entity.Property(e => e.Bio).HasColumnName("bio");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("created_at");
-            entity.Property(e => e.RatingAvg)
-                .HasColumnType("decimal(3, 2)")
-                .HasColumnName("rating_avg");
-            entity.Property(e => e.TotalCourses).HasColumnName("total_courses");
-            entity.Property(e => e.TotalReviews).HasColumnName("total_reviews");
-
-            entity.HasOne(d => d.InstructorNavigation).WithOne(p => p.Instructor)
-                .HasForeignKey<Instructor>(d => d.InstructorId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Instructor_User");
         });
 
         modelBuilder.Entity<Leaderboard>(entity =>
@@ -1022,18 +972,17 @@ public partial class OrigamiDbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
-            entity.Property(e => e.InstructorId).HasColumnName("instructor_id");
             entity.Property(e => e.ReviewId).HasColumnName("review_id");
-
-            entity.HasOne(d => d.Instructor).WithMany(p => p.ReviewResponses)
-                .HasForeignKey(d => d.InstructorId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_RR_Instructor");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
 
             entity.HasOne(d => d.Review).WithMany(p => p.ReviewResponses)
                 .HasForeignKey(d => d.ReviewId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_RR_Review");
+
+            entity.HasOne(d => d.User).WithMany(p => p.ReviewResponses)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK_ReviewResponse_User");
         });
 
         modelBuilder.Entity<Role>(entity =>
@@ -1292,10 +1241,6 @@ public partial class OrigamiDbContext : DbContext
             entity.HasIndex(e => e.Email, "UQ__User__AB6E6164B7307E3C").IsUnique();
 
             entity.Property(e => e.UserId).HasColumnName("user_id");
-            entity.Property(e => e.AvatarUrl)
-                .HasMaxLength(255)
-                .IsUnicode(false)
-                .HasColumnName("avatar_url");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
@@ -1341,6 +1286,34 @@ public partial class OrigamiDbContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__User_badg__user___245D67DE");
+        });
+
+        modelBuilder.Entity<UserProfile>(entity =>
+        {
+            entity.HasKey(e => e.UserId);
+
+            entity.ToTable("UserProfile");
+
+            entity.Property(e => e.UserId)
+                .ValueGeneratedNever()
+                .HasColumnName("user_id");
+            entity.Property(e => e.AvatarUrl)
+                .HasMaxLength(255)
+                .IsUnicode(false)
+                .HasColumnName("avatar_url");
+            entity.Property(e => e.Bio).HasColumnName("bio");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.DisplayName)
+                .HasMaxLength(255)
+                .HasColumnName("display_name");
+
+            entity.HasOne(d => d.User).WithOne(p => p.UserProfile)
+                .HasForeignKey<UserProfile>(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_UserProfile_User");
         });
 
         modelBuilder.Entity<Vote>(entity =>

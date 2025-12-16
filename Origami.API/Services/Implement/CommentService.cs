@@ -74,7 +74,7 @@ namespace Origami.API.Services.Implement
                 include: x => x
                     .Include(c => c.User)
                     .Include(c => c.Guide)
-                    .Include(c => c.Replies)
+                    .Include(c => c.InverseParent)
                         .ThenInclude(r => r.User),
                 asNoTracking: true
             ) ?? throw new BadHttpRequestException("CommentNotFound");
@@ -95,7 +95,7 @@ namespace Origami.API.Services.Implement
                 selector: x => _mapper.Map<GetCommentResponse>(x),
                 predicate: predicate,
                 orderBy: q => q.OrderByDescending(o => o.CreatedAt),
-                include: x => x.Include(c => c.User).Include(c => c.Replies).ThenInclude(r => r.User),
+                include: x => x.Include(c => c.User).Include(c => c.InverseParent).ThenInclude(r => r.User),
                 page: pagingModel.page,
                 size: pagingModel.size
             );
