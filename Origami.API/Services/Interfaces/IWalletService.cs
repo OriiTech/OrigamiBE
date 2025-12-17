@@ -8,7 +8,7 @@ public interface IWalletService
 {
     Task<GetWalletResponse> GetMyWallet();
     Task<GetWalletResponse> GetWalletById(int id);
-    Task<IPaginate<TransactionResponse>> GetMyTransactions(TransactionFilter filter, PagingModel pagingModel);
+    Task<IPaginate<TransactionResponse>> GetMyTransactions(MyTransactionFilter filter, PagingModel pagingModel);
     Task<IPaginate<TransactionResponse>> GetAllTransactions(TransactionFilter filter, PagingModel pagingModel);
 }
 

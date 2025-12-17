@@ -36,7 +36,7 @@ public class WalletController : BaseController<WalletController>
 
     [HttpGet(ApiEndPointConstant.Wallet.TransactionsEndPoint)]
     [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetMyTransactions([FromQuery] TransactionFilter filter, [FromQuery] PagingModel pagingModel)
+    public async Task<IActionResult> GetMyTransactions([FromQuery] MyTransactionFilter filter, [FromQuery] PagingModel pagingModel)
     {
         var response = await _walletService.GetMyTransactions(filter, pagingModel);
         return Ok(response);

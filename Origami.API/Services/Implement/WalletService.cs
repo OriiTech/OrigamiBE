@@ -78,7 +78,7 @@ public class WalletService : BaseService<WalletService>, IWalletService
         return _mapper.Map<GetWalletResponse>(wallet);
     }
 
-    public async Task<IPaginate<TransactionResponse>> GetMyTransactions(TransactionFilter filter, PagingModel pagingModel)
+    public async Task<IPaginate<TransactionResponse>> GetMyTransactions(MyTransactionFilter filter, PagingModel pagingModel)
     {
         var userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
         
