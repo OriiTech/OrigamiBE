@@ -68,10 +68,6 @@ namespace Origami.API.Extensions
             services.AddScoped<IVnPayService, VnPayService>();
             services.AddScoped<ICloudinaryService, CloudinaryService>();
 
-
-            services.Configure<CloudinarySettings>(configuration.GetSection("Cloudinary"));
-
-
             return services;
         }
         public static AuthenticationBuilder AddJwtValidation(this IServiceCollection services, IConfiguration configuration)

@@ -1,9 +1,8 @@
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
 using Origami.API.Services.Interfaces;
-using Origami.BusinessTier.Config;
 
 namespace Origami.API.Services.Implement;
 
@@ -11,10 +10,14 @@ public class CloudinaryService : ICloudinaryService
 {
     private readonly Cloudinary _cloudinary;
 
-    public CloudinaryService(IOptions<CloudinarySettings> settings)
+    public CloudinaryService(IConfiguration configuration)
     {
-        var config = settings.Value;
-        var account = new Account(config.CloudName, config.ApiKey, config.ApiSecret);
+        var section = configuration.GetSection("Cloudinary");
+        var cloudName = section["CloudName"] ?? string.Empty;
+        var apiKey = section["ApiKey"] ?? string.Empty;
+        var apiSecret = section["ApiSecret"] ?? string.Empty;
+
+        var account = new Account(cloudName, apiKey, apiSecret);
         _cloudinary = new Cloudinary(account);
     }
 
