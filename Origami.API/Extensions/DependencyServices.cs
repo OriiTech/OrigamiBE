@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Origami.API.Services.Implement;
 using Origami.API.Services.Interfaces;
+using Origami.BusinessTier.Config;
 using Origami.DataTier.Models;
 using Origami.DataTier.Repository.Implement;
 using Origami.DataTier.Repository.Interfaces;
@@ -65,6 +66,10 @@ namespace Origami.API.Extensions
             services.AddScoped<IUserBadgeService, UserBadgeService>();
             services.AddScoped<IWalletService, WalletService>();
             services.AddScoped<IVnPayService, VnPayService>();
+            services.AddScoped<ICloudinaryService, CloudinaryService>();
+
+
+            services.Configure<CloudinarySettings>(configuration.GetSection("Cloudinary"));
 
 
             return services;
