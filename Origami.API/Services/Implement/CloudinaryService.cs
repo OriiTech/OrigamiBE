@@ -47,8 +47,7 @@ public class CloudinaryService : ICloudinaryService
         var uploadParams = new VideoUploadParams
         {
             File = new FileDescription(file.FileName, stream),
-            Folder = "origami/videos",
-            ResourceType = ResourceType.Video
+            Folder = "origami/videos"
         };
 
         var result = await _cloudinary.UploadAsync(uploadParams);
