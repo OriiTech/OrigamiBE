@@ -81,6 +81,53 @@ namespace Origami.API.Services.Implement
 
             return _mapper.Map<GetCommentResponse>(comment);
         }
+        public async Task<GuideCommentsResponse> GetCommentsByGuideId(int guideId)
+        {
+            var repo = _unitOfWork.GetRepository<Comment>();
+            var comments = await repo.GetListAsync(
+            predicate: x => x.GuideId == guideId,
+            include: q => q.Include(x => x.User),
+            asNoTracking: true
+            );
+            var lookup = comments
+                .Where(x => x.ParentId != null)
+                .GroupBy(x => x.ParentId!.Value)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var total = comments.Count;
+            var rootComments = comments.Where(x => x.ParentId == null).Select(c => new CommentDto
+                {
+                    Id = c.CommentId,
+                    Step = null,
+                    Comment = c.Content,
+                    AskName = c.User.Username,
+                    Date = c.CreatedAt,
+                    Reply = lookup.TryGetValue(c.CommentId, out var replies)? replies.Select(r => new CommentReplyDto
+                    {
+                        ResponseName = r.User?.Username ?? "Unknown",
+                        Date = r.CreatedAt,
+                        Comment = r.Content
+                    }).ToList(): new List<CommentReplyDto>()
+            })
+                .ToList();
+            return new GuideCommentsResponse
+            {
+                TotalComments = total,
+                Comment = rootComments
+            };
+
+        }
+        public async Task<int> CountComment(CommentFilter filter)
+        {
+            var repo = _unitOfWork.GetRepository<Comment>();
+            Expression<Func<Comment, bool>> predicate = x =>
+                (!filter.GuideId.HasValue || x.GuideId == filter.GuideId.Value) &&
+                (!filter.UserId.HasValue || x.UserId == filter.UserId.Value) &&
+                (!filter.CreatedAt.HasValue || x.CreatedAt.Value.Date == filter.CreatedAt.Value.Date) &&
+                (!filter.ParentId.HasValue || x.ParentId == filter.ParentId.Value);
+            var count = await repo.CountAsync(predicate);
+            return count;
+        }
         public async Task<IPaginate<GetCommentResponse>> ViewAllComment(CommentFilter filter, PagingModel pagingModel)
         {
             var repo = _unitOfWork.GetRepository<Comment>();
