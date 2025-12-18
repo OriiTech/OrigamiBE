@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +16,25 @@ if (!string.IsNullOrEmpty(port))
 {
     builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 }
+var firebaseSection = builder.Configuration.GetSection("Firebase");
+
+var credentialPath = firebaseSection["CredentialPath"]
+    ?? throw new InvalidOperationException("Firebase:CredentialPath is not configured");
+
+var credentialFile = Path.Combine(
+    builder.Environment.ContentRootPath,
+    credentialPath
+);
+
+if (FirebaseApp.DefaultInstance == null)
+{
+    FirebaseApp.Create(new AppOptions
+    {
+        Credential = GoogleCredential.FromFile(credentialFile)
+    });
+}
+
+
 // Add services to the container.
 builder.Services.AddDbContext<OrigamiDbContext>(options =>
     options.UseSqlServer(
@@ -27,7 +48,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: CorsConstant.PolicyName,
         policy =>
         {
-            policy.WithOrigins("*")
+            policy.WithOrigins()
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
