@@ -19,5 +19,7 @@ public partial class CourseReview
 
     public virtual Course? Course { get; set; }
 
+    public virtual ICollection<ReviewResponse> ReviewResponses { get; set; } = new List<ReviewResponse>();
+
     public virtual User? User { get; set; }
 }

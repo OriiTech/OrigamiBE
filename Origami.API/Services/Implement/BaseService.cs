@@ -20,17 +20,21 @@ namespace Origami.API.Services.Implement
             _mapper = mapper;
             _httpContextAccessor = httpContextAccessor;
         }
-       
-        protected string GetEmailFromJwt()
+
+        protected string? GetEmailFromJwt()
         {
-            string username = _httpContextAccessor?.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return username;
+            return _httpContextAccessor?
+                .HttpContext?
+                .User?
+                .FindFirstValue(ClaimTypes.Email);
         }
 
-        protected string GetRoleFromJwt()
+        protected string? GetRoleFromJwt()
         {
-            string role = _httpContextAccessor?.HttpContext?.User.FindFirstValue(ClaimTypes.Role);
-            return role;
+            return _httpContextAccessor?
+                .HttpContext?
+                .User?
+                .FindFirstValue(ClaimTypes.Role);
         }
         protected int? GetCurrentUserId()
         {

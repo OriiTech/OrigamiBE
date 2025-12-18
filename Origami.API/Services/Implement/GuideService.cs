@@ -64,10 +64,109 @@ namespace Origami.API.Services.Implement
             Guide guide = await _unitOfWork.GetRepository<Guide>().GetFirstOrDefaultAsync(
                 predicate: x => x.GuideId == id,
                 include: q => q.Include(x => x.Author)
-                       .Include(x => x.Origami), 
+                       .Include(x => x.Origami),
                 asNoTracking: true
             ) ?? throw new BadHttpRequestException("GuideNotFound");
             return _mapper.Map<GetGuideResponse>(guide);
+        }
+        public async Task<GetGuideDetailResponse> GetGuideDetailById(int id)
+        {
+            var guide = await _unitOfWork.GetRepository<Guide>()
+                .GetFirstOrDefaultAsync(
+                    predicate: x => x.GuideId == id,
+                    include: q => q
+                        .Include(x => x.Author).ThenInclude(a => a.UserProfile)
+                        .Include(x => x.Categories)
+                        .Include(x => x.GuideViews)
+                        .Include(x => x.GuideRatings)
+                        .Include(x => x.Favorites)
+                        .Include(x => x.Steps).ThenInclude(s => s.StepTips)
+                        .Include(x => x.GuideRequirement),
+                    asNoTracking: true
+                ) ?? throw new BadHttpRequestException("GuideNotFound");
+            var level = guide.Categories
+                .FirstOrDefault(c => c.Type == "LEVEL")
+                ?.CategoryName;
+            var categories = guide.Categories
+                .Where(c => c.Type != "LEVEL")
+                .Select(c => c.CategoryName!)
+                .ToList();
+
+            var response = new GetGuideDetailResponse
+            {
+                Id = guide.GuideId,
+                Title = guide.Title,
+                Subtitle = guide.Subtitle,
+                Description = guide.Description,
+
+                Creator = new CreatorDto
+                {
+                    Id = guide.Author.UserId,
+                    Name = guide.Author.Username,
+                    Image = guide.Author.UserProfile?.AvatarUrl,
+                    Bio = guide.Author.UserProfile?.Bio
+                },
+
+                Level = guide.Categories.FirstOrDefault(c => c.Type == "LEVEL")?.CategoryName,
+                Category = guide.Categories
+                .Where(c => c.Type != "LEVEL")
+                .Select(c => c.CategoryName)
+                .ToList(),
+
+                TotalViews = guide.GuideViews.Count,
+                TotalReviews = guide.GuideRatings.Count,
+                TotalBookmarks = guide.Favorites.Count,
+
+                Rating = BuildRating(guide.GuideRatings),
+
+                Price = new PriceDto
+                {
+                    Amount = guide.Price ?? 0,
+                    PaidOnly = guide.PaidOnly
+                },
+
+                ProductPreview = BuildPreview(guide),
+
+                Content = BuildContent(guide),
+
+                CreatedAt = guide.CreatedAt,
+                UpdatedAt = guide.UpdatedAt,
+
+                Bestseller = guide.Bestseller,
+                Trending = guide.Trending,
+                New = guide.IsNew
+            };
+            return response;
+
+        }
+        public async Task IncreaseView(int guideId)
+        {
+            var viewRepo = _unitOfWork.GetRepository<GuideView>();
+
+            int? userId = GetCurrentUserId();
+
+            string ip = _httpContextAccessor.HttpContext!
+                .Connection.RemoteIpAddress!
+                .ToString();
+
+            bool existed = await viewRepo.AnyAsync(x =>
+                x.GuideId == guideId &&
+                (
+                    (userId.HasValue && x.UserId == userId)
+                ) &&
+                x.ViewedAt >= DateTime.UtcNow.AddMinutes(-10)
+            );
+
+            if (existed) return;
+
+            await viewRepo.InsertAsync(new GuideView
+            {
+                GuideId = guideId,
+                UserId = userId,
+                ViewedAt = DateTime.UtcNow
+            });
+
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task<bool> UpdateGuideInfo(int id, GuideInfo request)
@@ -132,8 +231,150 @@ namespace Origami.API.Services.Implement
 
             return response;
         }
+        public async Task<IPaginate<GetGuideCardResponse>> ViewAllGuideCard(GuideCardFilter filter, PagingModel pagingModel)
+        {
+            var repo = _unitOfWork.GetRepository<Guide>();
+            Expression<Func<Guide, bool>> predicate = x =>
+                (string.IsNullOrEmpty(filter.Title) || x.Title.Contains(filter.Title)) &&
 
+                (string.IsNullOrEmpty(filter.CreatorName) ||
+                    x.Author.Username.Contains(filter.CreatorName)) &&
 
+                (!filter.CategoryId.HasValue ||
+                    x.Categories.Any(c => c.CategoryId == filter.CategoryId)) &&
+
+                (!filter.MinPrice.HasValue || x.Price >= filter.MinPrice) &&
+                (!filter.MaxPrice.HasValue || x.Price <= filter.MaxPrice) &&
+
+                (!filter.PaidOnly.HasValue || x.PaidOnly == filter.PaidOnly) &&
+
+                (!filter.Bestseller.HasValue || x.Bestseller == filter.Bestseller) &&
+                (!filter.Trending.HasValue || x.Trending == filter.Trending) &&
+                (!filter.IsNew.HasValue || x.IsNew == filter.IsNew) &&
+
+                (!filter.MinRating.HasValue ||
+                    x.GuideRatings.Any() &&
+                    x.GuideRatings.Average(r => r.Rating) >= filter.MinRating) &&
+
+                (!filter.MinViews.HasValue ||
+                    x.GuideViews.Count >= filter.MinViews);
+
+            var response = await repo.GetPagingListAsync(
+                selector: x => _mapper.Map<GetGuideCardResponse>(x),
+                predicate: predicate,
+                include: q => q
+                    .Include(x => x.Author)
+                     .ThenInclude(a => a.UserProfile)
+                     .Include(x => x.Categories)
+                     .Include(x => x.GuideViews)
+                     .Include(x => x.GuideRatings)
+                     .Include(x => x.GuidePromoPhotos),
+                     orderBy: q => q.OrderByDescending(x => x.CreatedAt),
+                     page: pagingModel.page,
+                     size: pagingModel.size
+             );
+
+            return response;
+        }
+        private RatingDto BuildRating(ICollection<GuideRating> ratings)
+        {
+            if (ratings == null || !ratings.Any())
+            {
+                return new RatingDto
+                {
+                    Average = 0,
+                    Count = 0,
+                    Distribution = new RatingDistributionDto()
+                };
+            }
+
+            return new RatingDto
+            {
+                Average = Math.Round(ratings.Average(r => r.Rating), 1),
+                Count = ratings.Count,
+                Distribution = new RatingDistributionDto
+                {
+                    FiveStars = ratings.Count(r => r.Rating == 5),
+                    FourStars = ratings.Count(r => r.Rating == 4),
+                    ThreeStars = ratings.Count(r => r.Rating == 3),
+                    TwoStars = ratings.Count(r => r.Rating == 2),
+                    OneStar = ratings.Count(r => r.Rating == 1),
+                }
+            };
+        }
+        private ProductPreviewDto BuildPreview(Guide guide)
+        {
+            return new ProductPreviewDto
+            {
+                VideoAvailable = guide.GuidePreview != null
+                                 && !string.IsNullOrEmpty(guide.GuidePreview.VideoUrl),
+
+                VideoUrl = guide.GuidePreview?.VideoUrl,
+
+                PromoPhotos = guide.GuidePromoPhotos
+                    .OrderBy(p => p.DisplayOrder)
+                    .Select(p => new PromoPhotoDto
+                    {
+                        Order = p.DisplayOrder,
+                        Url = p.Url
+                    })
+                    .ToList()
+            };
+        }
+        private ContentDto BuildContent(Guide guide)
+        {
+            return new ContentDto
+            {
+                Steps = guide.Steps
+                    .OrderBy(s => s.StepNumber)
+                    .Select(s => new StepDto
+                    {
+                        Order = s.StepNumber,
+                        Title = s.Title ?? string.Empty,
+                        Description = s.Description,
+                        Tips = (s.StepTips == null || !s.StepTips.Any())
+                            ? null
+                            : string.Join("||", s.StepTips
+                                .Select(t => t?.ToString() ?? string.Empty)
+                                .Where(t => !string.IsNullOrEmpty(t))
+                            ),
+                        MediaUrl = string.IsNullOrEmpty(s.VideoUrl)
+                            ? new List<MediaDto>()
+                            : s.VideoUrl
+                                .Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries)
+                                .Select((url, idx) => new MediaDto
+                                {
+                                    Order = idx,
+                                    Url = url,
+                                    Note = null
+                                })
+                                .ToList()
+                    })
+                    .ToList(),
+
+                TotalSteps = guide.Steps.Count,
+
+                Requirements = BuildRequirement(guide.GuideRequirement)
+            };
+        }
+        private RequirementDto BuildRequirement(GuideRequirement? req)
+        {
+            if (req == null) return new RequirementDto();
+
+            return new RequirementDto
+            {
+                PaperType = req.PaperType,
+                PaperSize = req.PaperSize,
+
+                Color = string.IsNullOrEmpty(req.Colors)
+                    ? new List<string>()
+                    : req.Colors.Split('|').ToList(),
+
+                Tools = string.IsNullOrEmpty(req.Tools)
+                    ? new List<string>()
+                    : req.Tools.Split('|').ToList()
+            };
+        }
 
     }
 }

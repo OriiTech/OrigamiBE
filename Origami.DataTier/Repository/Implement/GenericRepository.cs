@@ -81,28 +81,50 @@ namespace Origami.DataTier.Repository.Implement
             return await query.FirstOrDefaultAsync();
         }
 
-        public virtual async Task<ICollection<T>> GetListAsync(Expression<Func<T, bool>> predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null)
+        public virtual async Task<ICollection<T>> GetListAsync(
+            Expression<Func<T, bool>> predicate = null,
+            Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null,
+            bool asNoTracking = true)
         {
             IQueryable<T> query = _dbSet;
 
-            if (include != null) query = include(query);
+            if (asNoTracking)
+                query = query.AsNoTracking();
 
-            if (predicate != null) query = query.Where(predicate);
+            if (include != null)
+                query = include(query);
 
-            if (orderBy != null) return await orderBy(query).AsNoTracking().ToListAsync();
+            if (predicate != null)
+                query = query.Where(predicate);
 
-            return await query.AsNoTracking().ToListAsync();
+            if (orderBy != null)
+                query = orderBy(query);
+
+            return await query.ToListAsync();
         }
 
-        public virtual async Task<ICollection<TResult>> GetListAsync<TResult>(Expression<Func<T, TResult>> selector, Expression<Func<T, bool>> predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null)
+
+        public virtual async Task<ICollection<TResult>> GetListAsync<TResult>(
+            Expression<Func<T, TResult>> selector,
+            Expression<Func<T, bool>> predicate = null,
+            Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null,
+            bool asNoTracking = true)
         {
             IQueryable<T> query = _dbSet;
 
-            if (include != null) query = include(query);
+            if (asNoTracking)
+                query = query.AsNoTracking();
 
-            if (predicate != null) query = query.Where(predicate);
+            if (include != null)
+                query = include(query);
 
-            if (orderBy != null) return await orderBy(query).AsNoTracking().Select(selector).ToListAsync();
+            if (predicate != null)
+                query = query.Where(predicate);
+
+            if (orderBy != null)
+                query = orderBy(query);
 
             return await query.Select(selector).ToListAsync();
         }
