@@ -56,11 +56,10 @@ namespace Origami.API.Controllers
         }
         [HttpPost(ApiEndPointConstant.Guide.GuidesEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status201Created)]
-        public async Task<IActionResult> CreateGuide([FromBody] GuideInfo request)
+        public async Task<IActionResult> CreateGuide([FromBody] GuideSaveRequest request)
         {
-            var id = await _guideService.CreateNewGuide(request);
-            //request.AuthorId = CurrentUserId;         
-            return CreatedAtAction(nameof(GetGuide), new { id }, new { id });
+            var id = await _guideService.CreateGuideAsync(request);     
+            return Ok(new { guideId = id });
         }
 
         [HttpPatch(ApiEndPointConstant.Guide.GuideEndPoint)]
