@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Guide;
@@ -7,7 +8,10 @@ using Origami.DataTier.Models;
 using Origami.DataTier.Paginate;
 using Origami.DataTier.Repository.Interfaces;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace Origami.API.Services.Implement
 {
@@ -15,8 +19,9 @@ namespace Origami.API.Services.Implement
     {
         private readonly IConfiguration _configuration;
         private readonly IBadgeEvaluator _badgeEvaluator;
+
         public GuideService(IUnitOfWork<OrigamiDbContext> unitOfWork, ILogger<GuideService> logger, IMapper mapper,
-            IHttpContextAccessor httpContextAccessor, IConfiguration configuration) : base(unitOfWork, logger, mapper, httpContextAccessor)
+           IHttpContextAccessor httpContextAccessor, IConfiguration configuration) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
             _configuration = configuration;
         }
@@ -36,7 +41,10 @@ namespace Origami.API.Services.Implement
             var newGuide = _mapper.Map<Guide>(request);
             newGuide.CreatedAt = DateTime.UtcNow;
             newGuide.UpdatedAt = DateTime.UtcNow;
-            newGuide.AuthorId = (int)GetCurrentUserId();
+
+            int userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
+            newGuide.AuthorId = userId;
+
             if (request.CategoryIds != null && request.CategoryIds.Any())
             {
                 var categoryRepo = _unitOfWork.GetRepository<Category>();
@@ -54,17 +62,129 @@ namespace Origami.API.Services.Implement
             var isSuccessful = await _unitOfWork.CommitAsync() > 0;
             if (!isSuccessful)
                 throw new BadHttpRequestException("CreateFailed");
-            await _badgeEvaluator.EvaluateBadgesForUser((int)GetCurrentUserId());
+
+            await _badgeEvaluator.EvaluateBadgesForUser(userId);
 
             return newGuide.GuideId;
+        }
+
+        public async Task<int> CreateGuideAsync(GuideSaveRequest request)
+        {
+            int authorId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
+
+            var guideRepo = _unitOfWork.GetRepository<Guide>();
+            var stepRepo = _unitOfWork.GetRepository<Step>();
+            var categoryRepo = _unitOfWork.GetRepository<Category>();
+            var promoRepo = _unitOfWork.GetRepository<GuidePromoPhoto>();
+            var previewRepo = _unitOfWork.GetRepository<GuidePreview>();
+            var requirementRepo = _unitOfWork.GetRepository<GuideRequirement>();
+
+            //Check title
+            if (await guideRepo.AnyAsync(x => x.Title == request.Title))
+                throw new BadHttpRequestException("GuideTitleAlreadyExists");
+
+            //Create Guide
+            var guide = new Guide
+            {
+                Title = request.Title,
+                Subtitle = request.Subtitle,
+                Description = request.Description,
+                AuthorId = authorId,
+                Price = request.Price.Amount,
+                PaidOnly = request.Price.PaidOnly,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IsNew = true
+            };
+
+            await guideRepo.InsertAsync(guide);
+            await _unitOfWork.CommitAsync();
+            
+            //Categories
+            if (request.Category?.Any() == true)
+            {
+                var categoryNames = request.Category!;
+                var categories = await categoryRepo.GetListAsync(
+                    predicate: x => x.CategoryName != null && categoryNames.Contains(x.CategoryName)
+                );
+                guide.Categories = categories.ToList();
+            }
+
+            //Product Preview
+            if (request.ProductPreview != null)
+            {
+                if (request.ProductPreview.VideoAvailable &&
+                    !string.IsNullOrEmpty(request.ProductPreview.VideoUrl))
+                {
+                    await previewRepo.InsertAsync(new GuidePreview
+                    {
+                        GuideId = guide.GuideId,
+                        VideoUrl = request.ProductPreview.VideoUrl
+                    });
+                }
+
+                foreach (var photo in request.ProductPreview.PromoPhotos)
+                {
+                    await promoRepo.InsertAsync(new GuidePromoPhoto
+                    {
+                        GuideId = guide.GuideId,
+                        Url = photo.Url,
+                        DisplayOrder = photo.Order
+                    });
+                }
+            }
+            //Steps
+            foreach (var stepDto in request.Steps.OrderBy(x => x.Order))
+            {
+                string? imageUrl = null;
+                string? videoUrl = null;
+
+                var firstMedia = stepDto.Medias?.OrderBy(m => m.Order).FirstOrDefault();
+                if (firstMedia != null)
+                {
+                    if (firstMedia.Type == 1) imageUrl = firstMedia.Url;
+                    if (firstMedia.Type == 2) videoUrl = firstMedia.Url;
+                }
+
+                var step = new Step
+                {
+                    GuideId = guide.GuideId,
+                    StepNumber = stepDto.Order,
+                    Title = stepDto.Title,
+                    Description = stepDto.Description,
+                    ImageUrl = imageUrl,
+                    VideoUrl = videoUrl,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await stepRepo.InsertAsync(step);
+            }
+
+            //Requirements
+            if (request.Requirements != null)
+            {
+                await requirementRepo.InsertAsync(new GuideRequirement
+                {
+                    GuideId = guide.GuideId,
+                    PaperType = request.Requirements.PaperType,
+                    PaperSize = request.Requirements.PaperSize,
+                    Colors = string.Join("||", request.Requirements.Color),
+                    Tools = string.Join("||", request.Requirements.Tools)
+                });
+            }
+
+            await _unitOfWork.CommitAsync();
+
+            return guide.GuideId;
         }
 
         public async Task<GetGuideResponse> GetGuideById(int id)
         {
             Guide guide = await _unitOfWork.GetRepository<Guide>().GetFirstOrDefaultAsync(
                 predicate: x => x.GuideId == id,
-                include: q => q.Include(x => x.Author)
-                       .Include(x => x.Origami),
+                include: q => q
+                    .Include(x => x.Author)
+                    .Include(x => x.Origami),
                 asNoTracking: true
             ) ?? throw new BadHttpRequestException("GuideNotFound");
             return _mapper.Map<GetGuideResponse>(guide);
@@ -89,7 +209,7 @@ namespace Origami.API.Services.Implement
                 ?.CategoryName;
             var categories = guide.Categories
                 .Where(c => c.Type != "LEVEL")
-                .Select(c => c.CategoryName!)
+                .Select(c => c.CategoryName ?? string.Empty)
                 .ToList();
 
             var response = new GetGuideDetailResponse
@@ -107,11 +227,8 @@ namespace Origami.API.Services.Implement
                     Bio = guide.Author.UserProfile?.Bio
                 },
 
-                Level = guide.Categories.FirstOrDefault(c => c.Type == "LEVEL")?.CategoryName,
-                Category = guide.Categories
-                .Where(c => c.Type != "LEVEL")
-                .Select(c => c.CategoryName)
-                .ToList(),
+                Level = level,
+                Category = categories,
 
                 TotalViews = guide.GuideViews.Count,
                 TotalReviews = guide.GuideRatings.Count,
@@ -208,13 +325,13 @@ namespace Origami.API.Services.Implement
             var repo = _unitOfWork.GetRepository<Guide>();
 
             Expression<Func<Guide, bool>> predicate = x =>
-                (string.IsNullOrEmpty(filter.Title) || x.Title.Contains(filter.Title)) &&
-                (string.IsNullOrEmpty(filter.Description) || x.Description.Contains(filter.Description)) &&
+                (string.IsNullOrEmpty(filter.Title) || (x.Title != null && x.Title.Contains(filter.Title))) &&
+                (string.IsNullOrEmpty(filter.Description) || (x.Description != null && x.Description.Contains(filter.Description))) &&
                 (!filter.MinPrice.HasValue || x.Price >= filter.MinPrice.Value) &&
                 (!filter.MaxPrice.HasValue || x.Price <= filter.MaxPrice.Value) &&
                 (!filter.AuthorId.HasValue || x.AuthorId == filter.AuthorId.Value) &&
                 (!filter.OrigamiId.HasValue || x.OrigamiId == filter.OrigamiId.Value) &&
-                (!filter.CreatedAt.HasValue || x.CreatedAt.Value.Date == filter.CreatedAt.Value.Date);
+                (!filter.CreatedAt.HasValue || (x.CreatedAt.HasValue && x.CreatedAt.Value.Date == filter.CreatedAt.Value.Date));
 
             var response = await repo.GetPagingListAsync(
                 selector: x => _mapper.Map<GetGuideResponse>(x),
@@ -235,10 +352,10 @@ namespace Origami.API.Services.Implement
         {
             var repo = _unitOfWork.GetRepository<Guide>();
             Expression<Func<Guide, bool>> predicate = x =>
-                (string.IsNullOrEmpty(filter.Title) || x.Title.Contains(filter.Title)) &&
+                (string.IsNullOrEmpty(filter.Title) || (x.Title != null && x.Title.Contains(filter.Title))) &&
 
                 (string.IsNullOrEmpty(filter.CreatorName) ||
-                    x.Author.Username.Contains(filter.CreatorName)) &&
+                    (x.Author.Username != null && x.Author.Username.Contains(filter.CreatorName))) &&
 
                 (!filter.CategoryId.HasValue ||
                     x.Categories.Any(c => c.CategoryId == filter.CategoryId)) &&
