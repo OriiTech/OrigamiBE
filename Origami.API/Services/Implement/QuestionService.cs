@@ -114,7 +114,7 @@ namespace Origami.API.Services.Interfaces
                 if (user == null)
                     throw new BadHttpRequestException("UserNotFound");
 
-                question.UserId = request.UserId;
+                question.UserId = request.UserId.Value;
             }
 
             if (!string.IsNullOrEmpty(request.Content))

@@ -21,6 +21,16 @@ public partial class Guide
 
     public int? OrigamiId { get; set; }
 
+    public string? Subtitle { get; set; }
+
+    public bool PaidOnly { get; set; }
+
+    public bool Bestseller { get; set; }
+
+    public bool Trending { get; set; }
+
+    public bool IsNew { get; set; }
+
     public virtual User Author { get; set; } = null!;
 
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
@@ -28,6 +38,16 @@ public partial class Guide
     public virtual ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
 
     public virtual ICollection<GuideAccess> GuideAccesses { get; set; } = new List<GuideAccess>();
+
+    public virtual GuidePreview? GuidePreview { get; set; }
+
+    public virtual ICollection<GuidePromoPhoto> GuidePromoPhotos { get; set; } = new List<GuidePromoPhoto>();
+
+    public virtual ICollection<GuideRating> GuideRatings { get; set; } = new List<GuideRating>();
+
+    public virtual GuideRequirement? GuideRequirement { get; set; }
+
+    public virtual ICollection<GuideView> GuideViews { get; set; } = new List<GuideView>();
 
     public virtual Origami? Origami { get; set; }
 

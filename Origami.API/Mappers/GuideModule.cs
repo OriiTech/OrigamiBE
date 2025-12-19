@@ -18,6 +18,25 @@ namespace Origami.API.Mappers
                 .ForMember(dest => dest.OrigamiName, opt => opt.MapFrom(src => src.Origami.Name))
                 .ForMember(dest => dest.CategoryIds, opt => opt.MapFrom(src => src.Categories.Select(c => c.CategoryId)))
                 .ForMember(dest => dest.Steps, opt => opt.MapFrom(src => src.Steps));
+            CreateMap<Guide, GetGuideCardResponse>()
+            .ForMember(d => d.Id, o => o.MapFrom(s => s.GuideId))
+            .ForMember(d => d.CreatorName, o => o.MapFrom(s => s.Author.Username))
+            .ForMember(d => d.CreatorImage, o => o.MapFrom(s => s.Author.UserProfile.AvatarUrl))
+            .ForMember(d => d.TotalViews, o => o.MapFrom(s => s.GuideViews.Count))
+            .ForMember(d => d.Rating,
+                o => o.MapFrom(s =>
+                    s.GuideRatings.Any()
+                        ? s.GuideRatings.Average(r => r.Rating)
+                        : 0))
+            .ForMember(d => d.PromoPhotos,
+                o => o.MapFrom(s => s.GuidePromoPhotos.Select(p => p.PhotoId)))
+            .ForMember(d => d.New, o => o.MapFrom(s => s.IsNew))
+            .ForMember(d => d.Category,
+                o => o.MapFrom(s => s.Categories)); 
+
+            CreateMap<Category, CategoryDto>()
+                .ForMember(d => d.Id, o => o.MapFrom(s => s.CategoryId))
+                .ForMember(d => d.Name, o => o.MapFrom(s => s.CategoryName));
 
         }
     }
