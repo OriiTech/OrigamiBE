@@ -16,4 +16,6 @@ public partial class Badge
     public string? ConditionValue { get; set; }
 
     public virtual ICollection<UserBadge> UserBadges { get; set; } = new List<UserBadge>();
+
+    public virtual ICollection<ChallengePrize> Prizes { get; set; } = new List<ChallengePrize>();
 }
