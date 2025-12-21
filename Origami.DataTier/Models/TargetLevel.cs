@@ -9,5 +9,6 @@ public partial class TargetLevel
 
     public string Name { get; set; } = null!;
 
-    public virtual ICollection<Course> Courses { get; set; } = new List<Course>();
+    // --- Navigation Property ---
+    public virtual ICollection<CourseTargetLevel> CourseTargetLevels { get; set; } = new List<CourseTargetLevel>();
 }

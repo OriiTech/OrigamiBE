@@ -8,6 +8,7 @@ namespace Origami.BusinessTier.Payload.Course
 {
     public class CourseFilter
     {
+        public string? Name { get; set; }
         public string? Title { get; set; }
         public int? TeacherId { get; set; }
         public decimal? MinPrice { get; set; }
