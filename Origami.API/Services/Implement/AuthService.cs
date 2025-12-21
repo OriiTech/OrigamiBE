@@ -12,6 +12,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
+
 namespace Origami.API.Services.Implement
 {
     public class AuthService : BaseService<AuthService>, IAuthService
@@ -73,7 +74,8 @@ namespace Origami.API.Services.Implement
                 Email = request.Email,
                 Password = hashedPassword,
                 RoleId = request.RoleId ?? 1,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
 
             await userRepo.InsertAsync(newUser);
@@ -155,7 +157,8 @@ namespace Origami.API.Services.Implement
                     Email = email,
                     Password = PasswordUtil.HashPassword(Guid.NewGuid().ToString()),
                     RoleId = 1,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 };
 
                 await userRepo.InsertAsync(user);

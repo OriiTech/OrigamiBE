@@ -11,5 +11,8 @@ namespace Origami.API.Services.Interfaces
         Task<GetCourseResponse> GetCourseById(int id);
         Task<bool> UpdateCourseInfo(int id, CourseInfo request);
         Task<bool> DeleteCourse(int id);
+
+        Task<IPaginate<GetCourseCardResponse>> GetCoursesAsync(CourseFilter filter, PagingModel pagingModel);
+        Task<GetCourseDetailResponse> GetCourseDetailAsync(int id);
     }
 }
