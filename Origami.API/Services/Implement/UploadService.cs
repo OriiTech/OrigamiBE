@@ -7,47 +7,24 @@ namespace Origami.API.Services.Implement
 {
     public class UploadService : IUploadService
     {
-        private readonly string? _bucket;
-        private readonly StorageClient? _storageClient;
-        private readonly string? _credentialPath;
-        
+        private readonly string _bucket;
+        private readonly StorageClient _storageClient;
         public UploadService(IConfiguration config)
         {
-            _bucket = config["Firebase:Bucket"];
-            _credentialPath = config["Firebase:CredentialPath"];
+            _bucket = config["Firebase:Bucket"]
+                ?? throw new Exception("Firebase Bucket not configured");
 
-            // Only initialize StorageClient if credential file exists
-            if (!string.IsNullOrEmpty(_credentialPath))
-            {
-                var credentialPath = Path.Combine(
-                    Directory.GetCurrentDirectory(),
-                    _credentialPath
-                );
+            var credentialPath = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                config["Firebase:CredentialPath"]!
+            );
 
-                if (File.Exists(credentialPath))
-                {
-                    try
-                    {
-                        var credential = GoogleCredential.FromFile(credentialPath);
-                        _storageClient = StorageClient.Create(credential);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Log but don't throw - allow app to start without Firebase
-                        Console.WriteLine($"Warning: Failed to initialize Firebase StorageClient: {ex.Message}");
-                    }
-                }
-            }
+            var credential = GoogleCredential.FromFile(credentialPath);
+            _storageClient = StorageClient.Create(credential);
         }
 
         public async Task<string> UploadAsync(IFormFile file, string? folder)
         {
-            if (string.IsNullOrEmpty(_bucket))
-                throw new InvalidOperationException("Firebase Bucket not configured");
-
-            if (_storageClient == null)
-                throw new InvalidOperationException($"Firebase StorageClient not initialized. Please ensure Firebase credential file exists at: {_credentialPath}");
-
             var ext = Path.GetExtension(file.FileName);
             var fileName = $"{Guid.NewGuid()}{ext}";
             var objectName = string.IsNullOrEmpty(folder)

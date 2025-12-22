@@ -3,7 +3,6 @@ using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Course;
-using Origami.DataTier.Paginate;
 
 namespace Origami.API.Controllers
 {
@@ -57,22 +56,6 @@ namespace Origami.API.Controllers
             var isSuccessful = await _courseService.DeleteCourse(id);
             if (!isSuccessful) return Ok("DeleteStatusFailed");
             return Ok("DeleteStatusSuccess");
-        }
-
-        [HttpGet(ApiEndPointConstant.Course.CoursesEndpoint)]
-        [ProducesResponseType(typeof(IPaginate<GetCourseCardResponse>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetCourses([FromQuery] CourseFilter filter, [FromQuery] PagingModel pagingModel)
-        {
-            var response = await _courseService.GetCoursesAsync(filter, pagingModel);
-            return Ok(response);
-        }
-
-        [HttpGet(ApiEndPointConstant.Course.CourseEndpoint)]
-        [ProducesResponseType(typeof(GetCourseDetailResponse), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetCourseById([FromRoute] int id)
-        {
-            var response = await _courseService.GetCourseDetailAsync(id);
-            return Ok(response);
         }
     }
 }

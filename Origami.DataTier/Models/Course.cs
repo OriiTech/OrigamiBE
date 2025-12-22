@@ -29,8 +29,6 @@ public partial class Course
 
     public virtual ICollection<CourseReview> CourseReviews { get; set; } = new List<CourseReview>();
 
-    public virtual ICollection<CourseTargetLevel> CourseTargetLevels { get; set; } = new List<CourseTargetLevel>();
-
     public virtual ICollection<Lesson> Lessons { get; set; } = new List<Lesson>();
 
     public virtual ICollection<Question> Questions { get; set; } = new List<Question>();
@@ -38,4 +36,8 @@ public partial class Course
     public virtual ICollection<Revenue> Revenues { get; set; } = new List<Revenue>();
 
     public virtual User? Teacher { get; set; }
+
+    public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
+
+    public virtual ICollection<TargetLevel> Levels { get; set; } = new List<TargetLevel>();
 }

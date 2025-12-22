@@ -4,7 +4,6 @@ using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.TeamMember;
-using Origami.BusinessTier.Utils.EnumConvert;
 
 namespace Origami.API.Controllers
 {
@@ -34,7 +33,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
-        [Authorize(Roles = RoleConstants.User)]
+        [Authorize(Roles = "1")]
         [HttpPost(ApiEndPointConstant.TeamMember.TeamMembersEndPoint + "/bulk")]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> BulkAddMembers([FromBody] BulkAddTeamMemberRequest request)
@@ -43,7 +42,7 @@ namespace Origami.API.Controllers
             return Ok($"{added} members added");
         }
 
-        [Authorize(Roles = RoleConstants.User)]
+        [Authorize(Roles = "1")]
         [HttpPatch(ApiEndPointConstant.TeamMember.TeamMemberEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateTeamMember(int id, TeamMemberInfo request)
@@ -53,7 +52,7 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
-        [Authorize(Roles = RoleConstants.User)]
+        [Authorize(Roles = "1")]
         [HttpDelete(ApiEndPointConstant.TeamMember.TeamMemberEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteTeamMember(int id)

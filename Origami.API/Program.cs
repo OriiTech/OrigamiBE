@@ -16,32 +16,22 @@ if (!string.IsNullOrEmpty(port))
 {
     builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 }
-// Initialize Firebase only if credential file exists
 var firebaseSection = builder.Configuration.GetSection("Firebase");
-var credentialPath = firebaseSection["CredentialPath"];
 
-if (!string.IsNullOrEmpty(credentialPath))
+var credentialPath = firebaseSection["CredentialPath"]
+    ?? throw new InvalidOperationException("Firebase:CredentialPath is not configured");
+
+var credentialFile = Path.Combine(
+    builder.Environment.ContentRootPath,
+    credentialPath
+);
+
+if (FirebaseApp.DefaultInstance == null)
 {
-    var credentialFile = Path.Combine(
-        builder.Environment.ContentRootPath,
-        credentialPath
-    );
-
-    if (File.Exists(credentialFile) && FirebaseApp.DefaultInstance == null)
+    FirebaseApp.Create(new AppOptions
     {
-        try
-        {
-            FirebaseApp.Create(new AppOptions
-            {
-                Credential = GoogleCredential.FromFile(credentialFile)
-            });
-        }
-        catch (Exception ex)
-        {
-            // Log warning but don't fail startup if Firebase initialization fails
-            Console.WriteLine($"Warning: Failed to initialize Firebase: {ex.Message}");
-        }
-    }
+        Credential = GoogleCredential.FromFile(credentialFile)
+    });
 }
 
 

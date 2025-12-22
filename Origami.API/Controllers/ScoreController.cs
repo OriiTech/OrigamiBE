@@ -4,7 +4,6 @@ using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Score;
-using Origami.BusinessTier.Utils.EnumConvert;
 
 namespace Origami.API.Controllers
 {
@@ -34,7 +33,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
-        [Authorize(Roles = RoleConstants.Sensei)]
+        [Authorize(Roles = "2")]
         [HttpPost(ApiEndPointConstant.Score.ScoresEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateScore(ScoreInfo request)
