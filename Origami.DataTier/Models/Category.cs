@@ -11,6 +11,8 @@ public partial class Category
 
     public string Type { get; set; } = null!;
 
+    public virtual ICollection<Challenge> Challenges { get; set; } = new List<Challenge>();
+
     public virtual ICollection<Course> Courses { get; set; } = new List<Course>();
 
     public virtual ICollection<Guide> Guides { get; set; } = new List<Guide>();

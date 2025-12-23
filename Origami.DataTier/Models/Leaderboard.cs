@@ -19,6 +19,10 @@ public partial class Leaderboard
 
     public DateTime UpdatedAt { get; set; }
 
+    public decimal? JudgeScore { get; set; }
+
+    public decimal? VoteScore { get; set; }
+
     public virtual Challenge Challenge { get; set; } = null!;
 
     public virtual Team? Team { get; set; }

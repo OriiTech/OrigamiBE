@@ -63,6 +63,12 @@ public partial class User
 
     public virtual ICollection<Score> Scores { get; set; } = new List<Score>();
 
+    public virtual ICollection<SubmissionComment> SubmissionComments { get; set; } = new List<SubmissionComment>();
+
+    public virtual ICollection<SubmissionLike> SubmissionLikes { get; set; } = new List<SubmissionLike>();
+
+    public virtual ICollection<SubmissionView> SubmissionViews { get; set; } = new List<SubmissionView>();
+
     public virtual ICollection<Submission> Submissions { get; set; } = new List<Submission>();
 
     public virtual ICollection<TeamMember> TeamMembers { get; set; } = new List<TeamMember>();
@@ -76,4 +82,6 @@ public partial class User
     public virtual ICollection<Vote> Votes { get; set; } = new List<Vote>();
 
     public virtual ICollection<Wallet> Wallets { get; set; } = new List<Wallet>();
+
+    public virtual ICollection<Challenge> ChallengesNavigation { get; set; } = new List<Challenge>();
 }
