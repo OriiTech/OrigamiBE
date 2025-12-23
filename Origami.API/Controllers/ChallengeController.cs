@@ -3,6 +3,7 @@ using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Challenge;
+using Origami.DataTier.Paginate;
 
 namespace Origami.API.Controllers
 {
@@ -31,7 +32,13 @@ namespace Origami.API.Controllers
             var response = await _challengeService.ViewAllChallenges(filter, pagingModel);
             return Ok(response);
         }
-
+        [HttpGet(ApiEndPointConstant.Challenge.ChallengeListEndPoint)]
+        [ProducesResponseType(typeof(IPaginate<ChallengeListItemDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetChallengeList([FromQuery] ChallengeListFilter filter, [FromQuery] PagingModel pagingModel)
+        {
+            var response = await _challengeService.GetChallengeListAsync(filter, pagingModel);
+            return Ok(response);
+        }
         [HttpPost(ApiEndPointConstant.Challenge.ChallengesEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateChallenge(ChallengeInfo request)

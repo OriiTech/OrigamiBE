@@ -7,6 +7,7 @@ using Origami.BusinessTier.Payload.Challenge;
 using Origami.DataTier.Models;
 using Origami.DataTier.Paginate;
 using Origami.DataTier.Repository.Interfaces;
+using System.Linq.Expressions;
 
 namespace Origami.API.Services.Interfaces
 {
@@ -76,6 +77,80 @@ namespace Origami.API.Services.Interfaces
             );
 
             return response;
+        }
+        public async Task<IPaginate<ChallengeListItemDto>> GetChallengeListAsync(ChallengeListFilter filter,
+            PagingModel pagingModel)
+        {
+            var repo = _unitOfWork.GetRepository<Challenge>();
+
+            Expression<Func<Challenge, bool>> predicate = c =>
+                (string.IsNullOrEmpty(filter.Keyword)
+                    || c.Title.Contains(filter.Keyword)
+                    || c.Description.Contains(filter.Keyword))
+                && (string.IsNullOrEmpty(filter.Status) || c.Status == filter.Status)
+                && (string.IsNullOrEmpty(filter.Phase) || c.Phase == filter.Phase)
+                && (string.IsNullOrEmpty(filter.Level) || c.Level == filter.Level)
+                && (!filter.IsFeatured.HasValue || c.IsFeatured == filter.IsFeatured.Value)
+                && (!filter.IsFree.HasValue || c.IsFree == filter.IsFree.Value);
+
+            var result = await repo.GetPagingListAsync(
+                predicate: predicate,
+                orderBy: q => q.OrderByDescending(c => c.CreatedAt),
+                include: q => q
+                    .Include(c => c.Categories)
+                    .Include(c => c.CreatedByNavigation)
+                        .ThenInclude(u => u.UserProfile)
+                    .Include(c => c.Submissions),
+                selector: c => new ChallengeListItemDto
+                {
+                    Id = c.ChallengeId,
+                    Title = c.Title,
+                    Summary = c.Description,
+
+                    Status = c.Status,
+                    Phase = c.Phase,
+
+                    PromoPhoto = c.PromoPhoto,
+                    Theme = c.Theme,
+                    Level = c.Level,
+
+                    Category = c.Categories
+                        .Select(cat => cat.CategoryName)
+                        .ToList(),
+
+                    Organizer = new OrganizerDto
+                    {
+                        Id = c.CreatedByNavigation.UserId,
+                        Name = c.CreatedByNavigation.Username,
+                        AvatarUrl = c.CreatedByNavigation.UserProfile.AvatarUrl
+                    },
+
+                    Stats = new ChallengeStatsDto
+                    {
+                        ParticipantsCount = c.Submissions
+                            .Select(s => s.TeamId)
+                            .Distinct()
+                            .Count(),
+
+                        SubmissionsCount = c.Submissions.Count,
+
+                        PrizePool = c.PrizePool
+                    },
+
+                    IsParticipating = c.Submissions.Any(s =>s.Team.TeamMembers.Any(tm => tm.UserId == GetCurrentUserId())),
+
+                    IsFeatured = c.IsFeatured,
+                    IsFree = c.IsFree,
+                    EntryFee = c.EntryFee,
+
+                    CreatedAt = c.CreatedAt,
+                    UpdatedAt = c.UpdatedAt
+                },
+                page: pagingModel.page,
+                size: pagingModel.size
+            );
+
+            return result;
         }
 
         public async Task<bool> UpdateChallengeInfo(int id, ChallengeInfo request)
