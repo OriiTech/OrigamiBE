@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Query;
 using Origami.API.Services.Implement;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Challenge;
+using Origami.BusinessTier.Payload.Guide;
 using Origami.DataTier.Models;
 using Origami.DataTier.Paginate;
 using Origami.DataTier.Repository.Interfaces;
@@ -64,6 +65,346 @@ namespace Origami.API.Services.Interfaces
 
             return _mapper.Map<GetChallengeResponse>(challenge);
         }
+
+        //public async Task<ChallengeDetailDto> GetChallengeDetailAsync(int challengeId)
+        //{
+        //    var repo = _unitOfWork.GetRepository<Challenge>();
+
+        //    var challenge = await repo.GetFirstOrDefaultAsync(
+        //        predicate: c => c.ChallengeId == challengeId,
+        //        include: q => q
+        //            .Include(c => c.Categories)
+        //            .Include(c => c.CreatedByNavigation)
+        //                .ThenInclude(u => u.UserProfile)
+        //            .Include(c => c.Submissions)
+        //                .ThenInclude(s => s.Team)
+        //                    .ThenInclude(t => t.TeamMembers)
+        //            .Include(c => c.Users)
+        //                .ThenInclude(u => u.UserProfile)
+        //            .Include(c => c.ChallengeRules)
+        //                .ThenInclude(r => r.ChallengeRuleItems)
+        //            .Include(c => c.ChallengePrizes)
+        //                .ThenInclude(p => p.Badges)
+        //            .Include(c => c.ChallengeSchedule)
+        //    ) ?? throw new BadHttpRequestException("ChallengeNotFound");
+
+        //    var phase = ResolveCurrentPhase(challenge.ChallengeSchedule);
+
+        //    // Update runtime phase
+        //    challenge.Phase = phase;
+
+        //    var totalParticipants = challenge.Submissions
+        //        .SelectMany(s =>
+        //            s.Team != null
+        //                ? s.Team.TeamMembers.Select(tm => tm.UserId)
+        //                : new[] { s.SubmittedBy }
+        //        )
+        //        .Distinct()
+        //        .Count();
+
+        //    return new ChallengeDetailDto
+        //    {
+        //        Id = challenge.ChallengeId,
+        //        Title = challenge.Title,
+        //        Description = challenge.Description,
+
+        //        PromoPhoto = new PromoPhotoDto
+        //        {
+        //            Url = challenge.PromoPhoto
+        //        },
+
+        //        Organizer = new OrganizerDetailDto
+        //        {
+        //            Id = challenge.CreatedByNavigation.UserId,
+        //            Name = challenge.CreatedByNavigation.Username,
+        //            Avatar = challenge.CreatedByNavigation.UserProfile?.AvatarUrl,
+        //            Bio = challenge.CreatedByNavigation.UserProfile?.Bio
+        //        },
+
+        //        Details = new ChallengeDetailInfoDto
+        //        {
+        //            Status = challenge.Status,
+        //            Phase = phase,
+        //            Level = challenge.Level,
+        //            Category = challenge.Categories
+        //                .Select(c => c.CategoryName)
+        //                .ToList(),
+
+        //            PaperRequirements = null,
+        //            FoldingConstraints = null,
+        //            PhotographyRequirements = null,
+        //            ModelRequirements = null,
+        //            OtherRequirements = new(),
+
+        //            MaximumSubmissions = null,
+        //            TeamSize = challenge.MaxTeamSize
+        //        },
+
+        //        Schedule = challenge.ChallengeSchedule == null
+        //            ? null
+        //            : new ChallengeScheduleDto
+        //            {
+        //                Dates = new ChallengeScheduleDatesDto
+        //                {
+        //                    RegistrationStart = challenge.ChallengeSchedule.RegistrationStart,
+        //                    SubmissionStart = challenge.ChallengeSchedule.SubmissionStart,
+        //                    SubmissionEnd = challenge.ChallengeSchedule.SubmissionEnd,
+        //                    VotingStart = challenge.ChallengeSchedule.VotingStart,
+        //                    VotingEnd = challenge.ChallengeSchedule.VotingEnd,
+        //                    ResultsDate = challenge.ChallengeSchedule.ResultsDate
+        //                },
+        //                //Timeline = null // DB chưa support
+        //            },
+
+        //        Rules = challenge.ChallengeRules.Select(r => new ChallengeRuleDto
+        //        {
+        //            Section = r.Section,
+        //            Items = r.ChallengeRuleItems
+        //                .Select(i => i.Content)
+        //                .ToList()
+        //        }).ToList(),
+
+        //        Prize = new ChallengePrizeDto
+        //        {
+        //            TotalPool = challenge.PrizePool,
+        //            Currency = true,
+        //            Ranks = challenge.ChallengePrizes
+        //                .OrderBy(p => p.Rank)
+        //                .Select(p => new PrizeRankDto
+        //                {
+        //                    Rank = p.Rank,
+        //                    Cash = p.Cash,
+        //                    Description = p.Description,
+        //                    Badges = p.Badges.Select(b => new BadgeDto
+        //                    {
+        //                        Id = b.BadgeId,
+        //                        Name = b.BadgeName,
+        //                        //Icon = b.Icon
+        //                    }).ToList()
+        //                }).ToList()
+        //        },
+
+        //        Judges = challenge.Users.Select(u => new JudgeDto
+        //        {
+        //            Id = u.UserId,
+        //            Name = u.Username,
+        //            Role = "judge",
+        //            Avatar = u.UserProfile?.AvatarUrl,
+        //            Bio = u.UserProfile?.Bio
+        //        }).ToList(),
+
+        //        UserContext = new ChallengeUserContextDto
+        //        {
+        //            CanSubmit = phase == "submission",
+        //            HasSubmissions = challenge.Submissions.Any(),
+        //            CanVote = phase == "voting",
+        //            IsJudge = challenge.Users.Any(u => u.UserId == GetCurrentUserId()),
+        //            IsOrganizer = challenge.CreatedBy == GetCurrentUserId()
+        //        },
+
+        //        Stats = new ChallengeStatsDetailDto
+        //        {
+        //            TotalParticipants = totalParticipants,
+        //            TotalSubmissions = challenge.Submissions.Count,
+        //            TotalViews = 0,
+        //            Rating = 0
+        //        },
+
+        //        Metadata = new ChallengeMetadataDto
+        //        {
+        //            CreatedAt = challenge.CreatedAt,
+        //            UpdatedAt = challenge.UpdatedAt,
+        //            PublishedAt = challenge.CreatedAt
+        //        }
+        //    };
+        //}
+
+        private async Task<ChallengeDetailDto> LoadChallengeDetailBaseAsync(int challengeId)
+        {
+            var repo = _unitOfWork.GetRepository<Challenge>();
+
+            var challenge = await repo.GetFirstOrDefaultAsync(
+                predicate: c => c.ChallengeId == challengeId,
+                include: q => q
+                    .AsSplitQuery()
+                    .Include(c => c.Categories)
+                    .Include(c => c.CreatedByNavigation)
+                        .ThenInclude(u => u.UserProfile)
+                    .Include(c => c.Submissions)
+                        .ThenInclude(s => s.Team)
+                            .ThenInclude(t => t.TeamMembers)
+                    .Include(c => c.Users)
+                    .Include(c => c.ChallengeRules)
+                        .ThenInclude(r => r.ChallengeRuleItems)
+                    .Include(c => c.ChallengePrizes)
+                        .ThenInclude(p => p.Badges)
+                    .Include(c => c.ChallengeSchedule)
+                    .Include(c => c.ChallengeRequirement)
+                    .Include(c => c.ChallengeOtherRequirements)
+                    .Include(c => c.Submissions)
+                    
+            ) ?? throw new BadHttpRequestException("ChallengeNotFound");
+            var resolvedPhase = ResolveCurrentPhase(challenge.ChallengeSchedule);
+            var totalParticipants = challenge.Submissions
+                .SelectMany(s =>
+                    s.TeamId != null
+                        ? s.Team.TeamMembers.Select(tm => tm.UserId)
+                        : new[] { s.SubmittedBy }
+                )
+                .Distinct()
+                .Count();
+            return new ChallengeDetailDto
+            {
+                Id = challenge.ChallengeId,
+                Title = challenge.Title,
+                Description = challenge.Description,
+
+                PromoPhoto = new PromoPhotoDto
+                {
+                    Url = challenge.PromoPhoto
+                },
+
+                Organizer = new OrganizerDetailDto
+                {
+                    Id = challenge.CreatedByNavigation.UserId,
+                    Name = challenge.CreatedByNavigation.Username,
+                    Avatar = challenge.CreatedByNavigation.UserProfile?.AvatarUrl,
+                    Bio = challenge.CreatedByNavigation.UserProfile?.Bio
+                },
+
+                Details = new ChallengeDetailInfoDto
+                {
+                    Status = challenge.Status,
+                    Phase = resolvedPhase,
+                    Level = challenge.Level,
+
+                    Category = challenge.Categories.Select(c => c.CategoryName).ToList(),
+
+                    PaperRequirements = challenge.ChallengeRequirement?.PaperRequirements,
+                    FoldingConstraints = challenge.ChallengeRequirement?.FoldingConstraints,
+                    PhotographyRequirements = challenge.ChallengeRequirement?.PhotographyRequirements,
+                    ModelRequirements = challenge.ChallengeRequirement?.ModelRequirements,
+
+                    OtherRequirements = challenge.ChallengeOtherRequirements.Select(r => r.Content).ToList(),
+
+                    MaximumSubmissions = challenge.ChallengeRequirement?.MaximumSubmissions,
+                    TeamSize = challenge.MaxTeamSize
+                }
+,
+
+                Schedule = new ChallengeScheduleDto
+                {
+                    Dates = new ChallengeScheduleDatesDto
+                    {
+                        RegistrationStart = challenge.ChallengeSchedule?.RegistrationStart,
+                        SubmissionStart = challenge.ChallengeSchedule?.SubmissionStart,
+                        SubmissionEnd = challenge.ChallengeSchedule?.SubmissionEnd,
+                        VotingStart = challenge.ChallengeSchedule?.VotingStart,
+                        VotingEnd = challenge.ChallengeSchedule?.VotingEnd,
+                        ResultsDate = challenge.ChallengeSchedule?.ResultsDate
+                    }
+                },
+
+                Rules = challenge.ChallengeRules.Select(r => new ChallengeRuleDto
+                {
+                    Section = r.Section,
+                    Items = r.ChallengeRuleItems.Select(i => i.Content).ToList()
+                }).ToList(),
+
+                Prize = new ChallengePrizeDto
+                {
+                    TotalPool = challenge.PrizePool,
+                    Currency = true,
+                    Ranks = challenge.ChallengePrizes.Select(p => new PrizeRankDto
+                    {
+                        Rank = p.Rank,
+                        Cash = p.Cash,
+                        Description = p.Description,
+                        Badges = p.Badges.Select(b => new BadgeDto
+                        {
+                            Id = b.BadgeId,
+                            Name = b.BadgeName,
+                            //Icon = b.Icon
+                        }).ToList()
+                    }).ToList()
+                },
+
+                Judges = challenge.Users.Select(u => new JudgeDto
+                {
+                    Id = u.UserId,
+                    Name = u.Username,
+                    Role = "judge",
+                    Avatar = u.UserProfile?.AvatarUrl,
+                    Bio = u.UserProfile?.Bio
+                }).ToList(),
+
+                Stats = new ChallengeStatsDetailDto
+                {
+                    TotalParticipants = totalParticipants,
+                    TotalSubmissions = challenge.Submissions.Count,
+                    TotalViews = 0,
+                    Rating = 0
+                },
+
+                Metadata = new ChallengeMetadataDto
+                {
+                    CreatedAt = challenge.CreatedAt,
+                    UpdatedAt = challenge.UpdatedAt,
+                    PublishedAt = challenge.CreatedAt
+                }
+            };
+        }
+
+        private async Task<ChallengeUserContextDto> BuildUserContextAsync(int challengeId,int? currentUserId)
+        {
+            if (currentUserId == null)
+                return new ChallengeUserContextDto();
+
+            var repo = _unitOfWork.GetRepository<Challenge>();
+
+            var challenge = await repo.GetFirstOrDefaultAsync(
+                predicate: c => c.ChallengeId == challengeId,
+                include: q => q
+                    .Include(c => c.Users)
+                    .Include(c => c.Submissions)
+                        .ThenInclude(s => s.Team)
+                            .ThenInclude(t => t.TeamMembers)
+            );
+
+            if (challenge == null)
+                return new ChallengeUserContextDto();
+
+            return new ChallengeUserContextDto
+            {
+                IsOrganizer = challenge.CreatedBy == currentUserId,
+
+                IsJudge = challenge.Users.Any(u => u.UserId == currentUserId),
+
+                HasSubmissions = challenge.Submissions.Any(s =>
+                    s.SubmittedBy == currentUserId
+                    || (s.Team != null && s.Team.TeamMembers.Any(tm => tm.UserId == currentUserId))
+                ),
+
+                CanSubmit = challenge.Status == "active"
+                            && challenge.Phase == "submission",
+
+                CanVote = challenge.Phase == "voting"
+            };
+        }
+
+        public async Task<ChallengeDetailDto> GetChallengeDetailAsync(int challengeId)
+        {
+            var baseDetail = await LoadChallengeDetailBaseAsync(challengeId);
+
+            var currentUserId = 3; //GetCurrentUserId();
+
+            baseDetail.UserContext =
+                await BuildUserContextAsync(challengeId, currentUserId);
+
+            return baseDetail;
+        }
+
+
 
         public async Task<IPaginate<GetChallengeResponse>> ViewAllChallenges(ChallengeFilter filter, PagingModel pagingModel)
         {
@@ -222,5 +563,25 @@ namespace Origami.API.Services.Interfaces
             bool isSuccessful = await _unitOfWork.CommitAsync() > 0;
             return isSuccessful;
         }
+        private string ResolveCurrentPhase(ChallengeSchedule s)
+        {
+            var now = DateTime.UtcNow;
+
+            if (s.RegistrationStart <= now && now < s.SubmissionStart)
+                return "registration";
+
+            if (s.SubmissionStart <= now && now < s.SubmissionEnd)
+                return "submission";
+
+            if (s.VotingStart <= now && now < s.VotingEnd)
+                return "voting";
+
+            if (s.ResultsDate <= now)
+                return "results";
+
+            return "upcoming";
+        }
+
     }
+
 }

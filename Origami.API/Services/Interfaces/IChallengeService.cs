@@ -12,5 +12,6 @@ namespace Origami.API.Services.Interfaces
         Task<bool> UpdateChallengeInfo(int id, ChallengeInfo request);
         Task<bool> DeleteChallenge(int id);
         Task<IPaginate<ChallengeListItemDto>> GetChallengeListAsync(ChallengeListFilter filter, PagingModel pagingModel);
+        Task<ChallengeDetailDto> GetChallengeDetailAsync(int challengeId);
     }
 }

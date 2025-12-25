@@ -21,7 +21,7 @@ namespace Origami.API.Controllers
         [ProducesResponseType(typeof(GetChallengeResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetChallenge(int id)
         {
-            var response = await _challengeService.GetChallengeById(id);
+            var response = await _challengeService.GetChallengeDetailAsync(id);
             return Ok(response);
         }
 
