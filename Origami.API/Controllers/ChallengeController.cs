@@ -41,9 +41,9 @@ namespace Origami.API.Controllers
         }
         [HttpPost(ApiEndPointConstant.Challenge.ChallengesEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
-        public async Task<IActionResult> CreateChallenge(ChallengeInfo request)
+        public async Task<IActionResult> CreateChallenge(ChallengeCreateDto request)
         {
-            var response = await _challengeService.CreateNewChallenge(request);
+            var response = await _challengeService.CreateChallengeAsync(request);
             return Ok(response);
         }
 

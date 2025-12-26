@@ -71,5 +71,7 @@ namespace Origami.DataTier.Repository.Interfaces
         void Delete(T entity);
         void DeleteRange(IEnumerable<T> entities);
         Task<IEnumerable<T>> GetAllAsync();
+        Task<List<T>> GetAllAsync(Expression<Func<T, bool>>? predicate = null, Func<IQueryable<T>, IQueryable<T>>? include = null);
+        Task<List<TResult>> GetAllAsync<TResult>(Expression<Func<T, TResult>> selector, Expression<Func<T, bool>>? predicate = null);
     }
 }

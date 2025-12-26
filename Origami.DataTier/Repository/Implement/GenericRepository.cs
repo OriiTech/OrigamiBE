@@ -219,6 +219,31 @@ namespace Origami.DataTier.Repository.Implement
         {
             return await _dbSet.AnyAsync(predicate);
         }
+        public async Task<List<T>> GetAllAsync(
+            Expression<Func<T, bool>>? predicate = null,
+            Func<IQueryable<T>, IQueryable<T>>? include = null)
+        {
+            IQueryable<T> query = _dbContext.Set<T>();
+
+            if (predicate != null)
+                query = query.Where(predicate);
+
+            if (include != null)
+                query = include(query);
+
+            return await query.ToListAsync();
+        }
+        public async Task<List<TResult>> GetAllAsync<TResult>(
+            Expression<Func<T, TResult>> selector,
+            Expression<Func<T, bool>>? predicate = null)
+        {
+            IQueryable<T> query = _dbContext.Set<T>();
+
+            if (predicate != null)
+                query = query.Where(predicate);
+
+            return await query.Select(selector).ToListAsync();
+        }
 
     }
 }

@@ -55,6 +55,126 @@ namespace Origami.API.Services.Interfaces
             return newChallenge.ChallengeId;
         }
 
+        public async Task<int> CreateChallengeAsync(ChallengeCreateDto dto)
+        {
+            ValidateCreateChallenge(dto);
+
+            var challengeRepo = _unitOfWork.GetRepository<Challenge>();
+            var categoryRepo = _unitOfWork.GetRepository<Category>();
+
+            await _unitOfWork.BeginTransactionAsync();
+
+            try
+            {
+                var categoryNames = dto.Category
+                    .Select(c => c.Trim().ToLower())
+                    .ToList();
+
+                var categories = await categoryRepo.GetAllAsync(
+                    c => categoryNames.Contains(c.CategoryName.ToLower())
+                );
+
+                if (categories.Count != dto.Category.Count)
+                    throw new BadHttpRequestException("CategoryNotFound");
+
+                var challenge = new Challenge
+                {
+                    Title = dto.Title,
+                    Description = dto.Summary,
+                    PromoPhoto = dto.PromoPhoto,
+
+                    Theme = dto.Theme,
+                    Level = dto.Level,
+
+                    PrizePool = dto.PrizePool,
+                    IsFree = dto.IsFree,
+                    EntryFee = dto.IsFree ? 0 : dto.EntryFee,
+
+                    MaxTeamSize = dto.TeamSize,
+
+                    Status = "upcoming",
+                    Phase = "registration",
+
+                    CreatedBy = GetCurrentUserId(),
+                    CreatedAt = DateTime.UtcNow,
+
+                    Categories = categories.ToList()
+                };
+
+                await challengeRepo.InsertAsync(challenge);
+                await _unitOfWork.CommitAsync(); 
+
+
+                challenge.ChallengeSchedule = new ChallengeSchedule
+                {
+                    RegistrationStart = dto.RegistrationStart,
+                    SubmissionStart = dto.SubmissionStart,
+                    SubmissionEnd = dto.SubmissionEnd,
+                    VotingStart = dto.VotingStart,
+                    VotingEnd = dto.VotingEnd,
+                    ResultsDate = dto.ResultsDate
+                };
+
+                challenge.ChallengeRequirement = new ChallengeRequirement
+                {
+                    PaperRequirements = dto.PaperRequirements,
+                    FoldingConstraints = dto.FoldingConstraints,
+                    PhotographyRequirements = dto.PhotographyRequirements,
+                    ModelRequirements = dto.ModelRequirements,
+                    MaximumSubmissions = dto.MaximumSubmissions
+                };
+
+                if (dto.OtherRequirements.Any())
+                {
+                    challenge.ChallengeOtherRequirements = dto.OtherRequirements
+                        .Select(r => new ChallengeOtherRequirement
+                        {
+                            Content = r
+                        }).ToList();
+                }
+
+                if (dto.Rules.Any())
+                {
+                    challenge.ChallengeRules = dto.Rules.Select(r => new ChallengeRule
+                    {
+                        Section = r.Section,
+                        ChallengeRuleItems = r.Items
+                            .Split("||", StringSplitOptions.RemoveEmptyEntries)
+                            .Select(i => new ChallengeRuleItem
+                            {
+                                Content = i.Trim()
+                            }).ToList()
+                    }).ToList();
+                }
+
+                await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                return challenge.ChallengeId;
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+        }
+        private static void ValidateCreateChallenge(ChallengeCreateDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Title))
+                throw new BadHttpRequestException("TitleRequired");
+
+            if (!dto.IsFree && (!dto.EntryFee.HasValue || dto.EntryFee <= 0))
+                throw new BadHttpRequestException("InvalidEntryFee");
+
+            if (dto.SubmissionStart >= dto.SubmissionEnd)
+                throw new BadHttpRequestException("InvalidSubmissionPeriod");
+
+            if (dto.VotingStart.HasValue && dto.VotingEnd.HasValue &&
+                dto.VotingStart >= dto.VotingEnd)
+                throw new BadHttpRequestException("InvalidVotingPeriod");
+        }
+
+
         public async Task<GetChallengeResponse> GetChallengeById(int id)
         {
             Challenge challenge = await _unitOfWork.GetRepository<Challenge>().GetFirstOrDefaultAsync(
