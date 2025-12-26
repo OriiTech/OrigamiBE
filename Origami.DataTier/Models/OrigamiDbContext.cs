@@ -520,12 +520,20 @@ public partial class OrigamiDbContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasColumnName("language");
+            entity.Property(e => e.Objectives).HasColumnName("objectives");
+            entity.Property(e => e.PaidOnly).HasColumnName("paid_only");
+            entity.Property(e => e.PreviewVideoUrl)
+                .HasMaxLength(512)
+                .HasColumnName("preview_video_url");
             entity.Property(e => e.Price)
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("price");
             entity.Property(e => e.PublishedAt)
                 .HasColumnType("datetime")
                 .HasColumnName("published_at");
+            entity.Property(e => e.Subtitle)
+                .HasMaxLength(255)
+                .HasColumnName("subtitle");
             entity.Property(e => e.TeacherId).HasColumnName("teacher_id");
             entity.Property(e => e.ThumbnailUrl)
                 .HasMaxLength(255)
@@ -534,6 +542,10 @@ public partial class OrigamiDbContext : DbContext
             entity.Property(e => e.Title)
                 .HasMaxLength(255)
                 .HasColumnName("title");
+            entity.Property(e => e.Trending).HasColumnName("trending");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
 
             entity.HasOne(d => d.Teacher).WithMany(p => p.Courses)
                 .HasForeignKey(d => d.TeacherId)
@@ -612,6 +624,7 @@ public partial class OrigamiDbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.LikeCount).HasColumnName("like_count");
             entity.Property(e => e.Rating).HasColumnName("rating");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
@@ -905,6 +918,7 @@ public partial class OrigamiDbContext : DbContext
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.DurationMinutes).HasColumnName("duration_minutes");
             entity.Property(e => e.LessonId).HasColumnName("lesson_id");
+            entity.Property(e => e.Note).HasColumnName("note");
             entity.Property(e => e.PreviewAvailable).HasColumnName("preview_available");
             entity.Property(e => e.Title)
                 .HasMaxLength(255)

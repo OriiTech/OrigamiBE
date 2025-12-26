@@ -96,9 +96,9 @@ namespace Origami.API.Controllers
 
         [HttpGet(ApiEndPointConstant.Course.CourseEndPoint + "/lessons")]
         [ProducesResponseType(typeof(List<LessonWithLecturesResponse>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetCourseLessons(int id)
+        public async Task<IActionResult> GetCourseLessons(int id, [FromQuery] int? userId = null)
         {
-            var response = await _courseService.GetLessonsWithLecturesAsync(id);
+            var response = await _courseService.GetLessonsWithLecturesAsync(id, userId);
             return Ok(response);
         }
 
@@ -108,6 +108,80 @@ namespace Origami.API.Controllers
         {
             var response = await _courseService.GetLectureDetailAsync(lectureId);
             return Ok(response);
+        }
+
+        // --- New APIs for Course Save (theo courseSave trong JSON) ---
+        [HttpPost(ApiEndPointConstant.Course.CoursesEndPoint + "/save")]
+        [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+        public async Task<IActionResult> CreateOrUpdateCourse(CourseSaveRequest request)
+        {
+            var response = await _courseService.CreateOrUpdateCourse(request);
+            return Ok(response);
+        }
+
+        // --- New APIs for Lesson Management (theo lessonSave trong JSON) ---
+        [HttpPost(ApiEndPointConstant.Course.CoursesEndPoint + "/lessons/save")]
+        [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+        public async Task<IActionResult> CreateOrUpdateLesson(LessonSaveRequest request)
+        {
+            var response = await _courseService.CreateOrUpdateLesson(request);
+            return Ok(response);
+        }
+
+        [HttpDelete(ApiEndPointConstant.Course.CoursesEndPoint + "/lessons/{lessonId}")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        public async Task<IActionResult> DeleteLesson(int lessonId)
+        {
+            var isSuccessful = await _courseService.DeleteLesson(lessonId);
+            if (!isSuccessful) return Ok("DeleteStatusFailed");
+            return Ok("DeleteStatusSuccess");
+        }
+
+        // --- New APIs for Lecture Management ---
+        [HttpPost(ApiEndPointConstant.Course.CoursesEndPoint + "/lectures/save")]
+        [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+        public async Task<IActionResult> CreateOrUpdateLecture(LectureSaveRequest request)
+        {
+            var response = await _courseService.CreateOrUpdateLecture(request);
+            return Ok(response);
+        }
+
+        [HttpDelete(ApiEndPointConstant.Course.CoursesEndPoint + "/lectures/{lectureId}")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        public async Task<IActionResult> DeleteLecture(int lectureId)
+        {
+            var isSuccessful = await _courseService.DeleteLecture(lectureId);
+            if (!isSuccessful) return Ok("DeleteStatusFailed");
+            return Ok("DeleteStatusSuccess");
+        }
+
+        // --- New APIs for Resource Management ---
+        [HttpDelete(ApiEndPointConstant.Course.CoursesEndPoint + "/resources/{resourceId}")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        public async Task<IActionResult> DeleteResource(int resourceId)
+        {
+            var isSuccessful = await _courseService.DeleteResource(resourceId);
+            if (!isSuccessful) return Ok("DeleteStatusFailed");
+            return Ok("DeleteStatusSuccess");
+        }
+
+        // --- New APIs for Course Flags ---
+        [HttpPatch(ApiEndPointConstant.Course.CourseEndPoint + "/trending")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        public async Task<IActionResult> MarkCourseTrending(int id, [FromBody] bool trending)
+        {
+            var isSuccessful = await _courseService.MarkCourseTrending(id, trending);
+            if (!isSuccessful) return Ok("UpdateStatusFailed");
+            return Ok("UpdateStatusSuccess");
+        }
+
+        [HttpPatch(ApiEndPointConstant.Course.CourseEndPoint + "/bestseller")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        public async Task<IActionResult> MarkCourseBestseller(int id, [FromBody] bool bestseller)
+        {
+            var isSuccessful = await _courseService.MarkCourseBestseller(id, bestseller);
+            if (!isSuccessful) return Ok("UpdateStatusFailed");
+            return Ok("UpdateStatusSuccess");
         }
     }
 }

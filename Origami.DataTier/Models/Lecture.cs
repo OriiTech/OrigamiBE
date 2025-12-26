@@ -23,6 +23,8 @@ public partial class Lecture
 
     public DateTime CreatedAt { get; set; }
 
+    public string? Note { get; set; }
+
     public virtual ICollection<LectureProgress> LectureProgresses { get; set; } = new List<LectureProgress>();
 
     public virtual Lesson Lesson { get; set; } = null!;

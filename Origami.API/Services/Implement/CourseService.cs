@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
+using Newtonsoft.Json;
 using Origami.API.Services.Implement;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Course;
@@ -111,6 +112,46 @@ namespace Origami.API.Services.Interfaces
                 course.Description = request.Description;
             if (request.Price.HasValue)
                 course.Price = request.Price;
+            if (!string.IsNullOrEmpty(request.Language))
+                course.Language = request.Language;
+            if (!string.IsNullOrEmpty(request.ThumbnailUrl))
+                course.ThumbnailUrl = request.ThumbnailUrl;
+            if (!string.IsNullOrEmpty(request.Subtitle))
+                course.Subtitle = request.Subtitle;
+            if (request.Objectives != null)
+                course.Objectives = JsonConvert.SerializeObject(request.Objectives);
+            if (request.PaidOnly.HasValue)
+                course.PaidOnly = request.PaidOnly;
+            if (request.Trending.HasValue)
+                course.Trending = request.Trending;
+            if (!string.IsNullOrEmpty(request.PreviewVideoUrl))
+                course.PreviewVideoUrl = request.PreviewVideoUrl;
+            if (request.UpdatedAt.HasValue)
+                course.UpdatedAt = request.UpdatedAt;
+            else
+                course.UpdatedAt = DateTime.UtcNow;
+
+            // Update Categories
+            if (request.CategoryIds != null && request.CategoryIds.Any())
+            {
+                var categoryRepo = _unitOfWork.GetRepository<Category>();
+                var categories = await categoryRepo.GetListAsync(
+                    predicate: c => request.CategoryIds.Contains(c.CategoryId),
+                    asNoTracking: false
+                );
+                course.Categories = categories.ToList();
+            }
+
+            // Update TargetLevels
+            if (request.TargetLevelIds != null && request.TargetLevelIds.Any())
+            {
+                var levelRepo = _unitOfWork.GetRepository<TargetLevel>();
+                var levels = await levelRepo.GetListAsync(
+                    predicate: l => request.TargetLevelIds.Contains(l.LevelId),
+                    asNoTracking: false
+                );
+                course.Levels = levels.ToList();
+            }
 
             bool isSuccessful = await _unitOfWork.CommitAsync() > 0;
             return isSuccessful;
@@ -151,7 +192,7 @@ namespace Origami.API.Services.Interfaces
                             {
                                 Id = x.TeacherId ?? 0,
                                 Name = x.Teacher.Username,
-                                Image = null // NOTE: avatar chưa có trường
+                                Image = x.Teacher.UserProfile != null ? x.Teacher.UserProfile.AvatarUrl : null
                             }
                         }
                         : new List<SimpleUserDto>(),
@@ -160,13 +201,13 @@ namespace Origami.API.Services.Interfaces
                         Id = t.LevelId,
                         Name = t.Name
                     }).ToList(),
-                    PaidOnly = null,   // NOTE: DB chưa có cột paid_only
-                    Trending = null    // NOTE: DB chưa có cột trending
+                    PaidOnly = x.PaidOnly,
+                    Trending = x.Trending
                 },
                 predicate: pricePredicate,
                 orderBy: q => q.OrderByDescending(c => c.CreatedAt),
                 include: q => q
-                    .Include(c => c.Teacher)
+                    .Include(c => c.Teacher).ThenInclude(t => t.UserProfile)
                     .Include(c => c.Levels)
                     .Include(c => c.CourseReviews)
                     .Include(c => c.CourseAccesses),
@@ -183,7 +224,7 @@ namespace Origami.API.Services.Interfaces
             var course = await _unitOfWork.GetRepository<Course>().GetFirstOrDefaultAsync(
                 predicate: x => x.CourseId == id,
                 include: q => q
-                    .Include(c => c.Teacher)
+                    .Include(c => c.Teacher).ThenInclude(t => t.UserProfile)
                     .Include(c => c.Categories)
                     .Include(c => c.Levels)
                     .Include(c => c.CourseReviews).ThenInclude(r => r.User)
@@ -214,9 +255,11 @@ namespace Origami.API.Services.Interfaces
             {
                 Id = course.CourseId,
                 Title = course.Title,
-                Subtitle = null, // NOTE: DB chưa có cột subtitle
+                Subtitle = course.Subtitle,
                 Description = course.Description,
-                Objectives = new List<string>(), // NOTE: DB chưa có cột objectives
+                Objectives = string.IsNullOrEmpty(course.Objectives)
+                    ? new List<string>()
+                    : JsonConvert.DeserializeObject<List<string>>(course.Objectives ?? "[]") ?? new List<string>(),
                 Language = course.Language,
                 PublishedDate = course.PublishedAt,
                 Instructors = course.Teacher != null
@@ -226,10 +269,12 @@ namespace Origami.API.Services.Interfaces
                         {
                             Id = course.TeacherId ?? 0,
                             Name = course.Teacher.Username,
-                            Image = null,
-                            Rating = null, // chưa có dữ liệu tổng hợp
-                            Reviews = null,
-                            Courses = null
+                            Image = course.Teacher.UserProfile?.AvatarUrl,
+                            Rating = course.Teacher.CourseReviews.Any() 
+                                ? course.Teacher.CourseReviews.Average(r => (double?)r.Rating) 
+                                : null,
+                            Reviews = course.Teacher.CourseReviews.Count,
+                            Courses = course.Teacher.Courses.Count
                         }
                     }
                     : new List<CourseInstructorDto>(),
@@ -252,7 +297,11 @@ namespace Origami.API.Services.Interfaces
                 Enrollment = new EnrollmentDto
                 {
                     TotalStudents = course.CourseAccesses.Count,
-                    RecentStudents = null // NOTE: chưa có trường riêng, để null
+                    RecentStudents = course.CourseAccesses
+                        .Where(ca => ca.PurchasedAt.HasValue && ca.PurchasedAt.Value >= DateTime.UtcNow.AddDays(-30))
+                        .Select(ca => ca.LearnerId)
+                        .Distinct()
+                        .Count()
                 },
                 Rating = new CourseRatingDto
                 {
@@ -263,11 +312,11 @@ namespace Origami.API.Services.Interfaces
                 Price = new CoursePriceDto
                 {
                     Amount = course.Price,
-                    PaidOnly = null // NOTE: DB chưa có cột paid_only
+                    PaidOnly = course.PaidOnly
                 },
                 Preview = new PreviewDto
                 {
-                    VideoUrl = null, // NOTE: DB chưa có preview video url
+                    VideoUrl = course.PreviewVideoUrl,
                     ThumbnailUrl = course.ThumbnailUrl
                 },
                 Content = new CourseContentDto
@@ -293,9 +342,9 @@ namespace Origami.API.Services.Interfaces
                 Metadata = new MetadataDto
                 {
                     CreatedAt = course.CreatedAt,
-                    UpdatedAt = null, // NOTE: DB chưa có cột updated_at
+                    UpdatedAt = course.UpdatedAt,
                     Bestseller = course.Bestseller,
-                    Trending = null // NOTE: DB chưa có cột trending
+                    Trending = course.Trending
                 }
             };
 
@@ -320,7 +369,7 @@ namespace Origami.API.Services.Interfaces
                 Rating = r.Rating,
                 Date = r.CreatedAt?.ToString("yyyy-MM-dd"),
                 Comment = r.Comment,
-                LikeCount = null, // NOTE: DB chưa có cột like_count
+                LikeCount = r.LikeCount ?? 0,
                 Response = r.ReviewResponses.Any()
                     ? new CourseReviewResponseItem
                     {
@@ -370,7 +419,7 @@ namespace Origami.API.Services.Interfaces
             };
         }
 
-        public async Task<List<LessonWithLecturesResponse>> GetLessonsWithLecturesAsync(int courseId)
+        public async Task<List<LessonWithLecturesResponse>> GetLessonsWithLecturesAsync(int courseId, int? userId = null)
         {
             var lessonRepo = _unitOfWork.GetRepository<Lesson>();
             var lessons = await lessonRepo.GetListAsync(
@@ -380,24 +429,50 @@ namespace Origami.API.Services.Interfaces
                 asNoTracking: true
             );
 
+            // Load lecture progress if userId is provided
+            List<LectureProgress>? lectureProgresses = null;
+            if (userId.HasValue)
+            {
+                var progressRepo = _unitOfWork.GetRepository<LectureProgress>();
+                var lectureIds = lessons.SelectMany(l => l.Lectures).Select(le => le.LectureId).ToList();
+                var progresses = await progressRepo.GetListAsync(
+                    predicate: p => p.UserId == userId.Value && lectureIds.Contains(p.LectureId),
+                    asNoTracking: true
+                );
+                lectureProgresses = progresses.ToList();
+            }
+
             return lessons.Select(l =>
             {
-                var totalMinutes = l.Lectures.Sum(le => le.DurationMinutes ?? 0);
+                var lLectures = l.Lectures.ToList();
+                var totalMinutes = lLectures.Sum(le => le.DurationMinutes ?? 0);
+                
+                // Calculate completed lectures if userId is provided
+                int totalCompleted = 0;
+                if (userId.HasValue && lectureProgresses != null)
+                {
+                    var lessonLectureIds = lLectures.Select(le => le.LectureId).ToList();
+                    totalCompleted = lectureProgresses
+                        .Count(p => lessonLectureIds.Contains(p.LectureId) && p.IsCompleted);
+                }
+
                 return new LessonWithLecturesResponse
                 {
                     Id = l.LessonId,
                     Title = l.Title,
-                    Lectures = l.Lectures.Select(le => new LectureItemResponse
+                    Lectures = lLectures.Select(le => new LectureItemResponse
                     {
                         Id = le.LectureId,
                         Title = le.Title,
                         Type = le.Type,
                         DurationMinutes = le.DurationMinutes,
                         PreviewAvailable = le.PreviewAvailable,
-                        IsCompleted = null // NOTE: cần user context + Lecture_progress để xác định
+                        IsCompleted = userId.HasValue && lectureProgresses != null
+                            ? lectureProgresses.Any(p => p.LectureId == le.LectureId && p.IsCompleted)
+                            : null
                     }).ToList(),
-                    TotalLectures = l.Lectures.Count,
-                    TotalLecturesCompleted = 0, // NOTE: chưa tính được vì thiếu user context
+                    TotalLectures = lLectures.Count,
+                    TotalLecturesCompleted = totalCompleted,
                     TotalMinutes = totalMinutes
                 };
             }).ToList();
@@ -424,7 +499,7 @@ namespace Origami.API.Services.Interfaces
                 Type = lecture.Type,
                 DurationMinutes = lecture.DurationMinutes,
                 PreviewAvailable = lecture.PreviewAvailable,
-                Note = null, // NOTE: DB chưa có cột note
+                Note = lecture.Note,
                 Resources = lecture.Resources.Select(r => new LectureResourceResponse
                 {
                     Id = r.ResourceId,
@@ -466,6 +541,376 @@ namespace Origami.API.Services.Interfaces
                 throw new BadHttpRequestException("CourseHasAccessesCannotDelete");
 
             repo.Delete(course);
+            bool isSuccessful = await _unitOfWork.CommitAsync() > 0;
+            return isSuccessful;
+        }
+
+        public async Task<int> CreateOrUpdateCourse(CourseSaveRequest request)
+        {
+            var repo = _unitOfWork.GetRepository<Course>();
+            Course course;
+
+            if (request.InstructorIds != null && request.InstructorIds.Any())
+            {
+                var userRepo = _unitOfWork.GetRepository<User>();
+                var teacherId = request.InstructorIds.First(); // Hiện tại chỉ hỗ trợ 1 instructor
+                var teacher = await userRepo.GetFirstOrDefaultAsync(
+                    predicate: x => x.UserId == teacherId,
+                    asNoTracking: true
+                );
+                if (teacher == null)
+                    throw new BadHttpRequestException("TeacherNotFound");
+            }
+
+            course = new Course
+            {
+                Title = request.Title,
+                Subtitle = request.Subtitle,
+                Description = request.Description,
+                Language = request.Language,
+                Objectives = request.Objectives != null ? JsonConvert.SerializeObject(request.Objectives) : null,
+                Price = request.Price?.Amount,
+                PaidOnly = request.Price?.PaidOnly,
+                PreviewVideoUrl = request.Preview?.VideoUrl,
+                ThumbnailUrl = request.Preview?.ThumbnailUrl,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                TeacherId = request.InstructorIds != null && request.InstructorIds.Any() ? request.InstructorIds.First() : null
+            };
+
+            await repo.InsertAsync(course);
+
+            // Add Categories
+            if (request.CategoryIds != null && request.CategoryIds.Any())
+            {
+                var categoryRepo = _unitOfWork.GetRepository<Category>();
+                var categories = await categoryRepo.GetListAsync(
+                    predicate: c => request.CategoryIds.Contains(c.CategoryId),
+                    asNoTracking: false
+                );
+                foreach (var category in categories)
+                {
+                    course.Categories.Add(category);
+                }
+            }
+
+            // Add TargetLevels
+            if (request.TargetLevelIds != null && request.TargetLevelIds.Any())
+            {
+                var levelRepo = _unitOfWork.GetRepository<TargetLevel>();
+                var levels = await levelRepo.GetListAsync(
+                    predicate: l => request.TargetLevelIds.Contains(l.LevelId),
+                    asNoTracking: false
+                );
+                foreach (var level in levels)
+                {
+                    course.Levels.Add(level);
+                }
+            }
+
+            var isSuccessful = await _unitOfWork.CommitAsync() > 0;
+            if (!isSuccessful)
+                throw new BadHttpRequestException("CreateFailed");
+
+            return course.CourseId;
+        }
+
+        public async Task<int> CreateOrUpdateLesson(LessonSaveRequest request)
+        {
+            var repo = _unitOfWork.GetRepository<Lesson>();
+            Lesson lesson;
+
+            // Verify course exists
+            var courseRepo = _unitOfWork.GetRepository<Course>();
+            var course = await courseRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.CourseId == request.CourseId,
+                asNoTracking: true
+            );
+            if (course == null)
+                throw new BadHttpRequestException("CourseNotFound");
+
+            if (request.Id.HasValue)
+            {
+                // Update existing lesson
+                lesson = await repo.GetFirstOrDefaultAsync(
+                    predicate: x => x.LessonId == request.Id.Value,
+                    asNoTracking: false
+                ) ?? throw new BadHttpRequestException("LessonNotFound");
+
+                if (!string.IsNullOrEmpty(request.Title))
+                    lesson.Title = request.Title;
+            }
+            else
+            {
+                // Create new lesson
+                lesson = new Lesson
+                {
+                    CourseId = request.CourseId,
+                    Title = request.Title,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await repo.InsertAsync(lesson);
+            }
+
+            // Handle lectures if provided
+            if (request.Lectures != null && request.Lectures.Any())
+            {
+                var lectureRepo = _unitOfWork.GetRepository<Lecture>();
+                foreach (var lectureReq in request.Lectures)
+                {
+                    Lecture lecture;
+                    if (lectureReq.Id.HasValue)
+                    {
+                        lecture = await lectureRepo.GetFirstOrDefaultAsync(
+                            predicate: x => x.LectureId == lectureReq.Id.Value,
+                            asNoTracking: false
+                        );
+                        if (lecture != null)
+                        {
+                            lecture.Title = lectureReq.Title ?? lecture.Title;
+                            lecture.Description = lectureReq.Description;
+                            lecture.Type = lectureReq.Type ?? lecture.Type;
+                            lecture.DurationMinutes = lectureReq.DurationMinutes;
+                            lecture.PreviewAvailable = lectureReq.PreviewAvailable ?? lecture.PreviewAvailable;
+                            lecture.ContentUrl = lectureReq.ContentUrl;
+                            lecture.Note = lectureReq.Note;
+                        }
+                    }
+                    else
+                    {
+                        lecture = new Lecture
+                        {
+                            LessonId = lesson.LessonId,
+                            Title = lectureReq.Title ?? "",
+                            Description = lectureReq.Description,
+                            Type = lectureReq.Type ?? "video",
+                            DurationMinutes = lectureReq.DurationMinutes,
+                            PreviewAvailable = lectureReq.PreviewAvailable ?? false,
+                            ContentUrl = lectureReq.ContentUrl,
+                            Note = lectureReq.Note,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        await lectureRepo.InsertAsync(lecture);
+
+                        // Handle resources if provided
+                        if (lectureReq.Resources != null && lectureReq.Resources.Any())
+                        {
+                            var resourceRepo = _unitOfWork.GetRepository<Resource>();
+                            foreach (var resourceReq in lectureReq.Resources)
+                            {
+                                Resource resource;
+                                if (resourceReq.Id.HasValue)
+                                {
+                                    resource = await resourceRepo.GetFirstOrDefaultAsync(
+                                        predicate: x => x.ResourceId == resourceReq.Id.Value,
+                                        asNoTracking: false
+                                    );
+                                    if (resource != null)
+                                    {
+                                        resource.Title = resourceReq.Title ?? resource.Title;
+                                        resource.Url = resourceReq.Url ?? resource.Url;
+                                        resource.Type = resourceReq.Type ?? resource.Type;
+                                    }
+                                }
+                                else
+                                {
+                                    resource = new Resource
+                                    {
+                                        LectureId = lecture.LectureId,
+                                        Title = resourceReq.Title ?? "",
+                                        Url = resourceReq.Url ?? "",
+                                        Type = resourceReq.Type ?? "pdf",
+                                        CreatedAt = DateTime.UtcNow
+                                    };
+                                    await resourceRepo.InsertAsync(resource);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            var isSuccessful = await _unitOfWork.CommitAsync() > 0;
+            if (!isSuccessful)
+                throw new BadHttpRequestException("SaveFailed");
+
+            return lesson.LessonId;
+        }
+
+        public async Task<bool> DeleteLesson(int lessonId)
+        {
+            var repo = _unitOfWork.GetRepository<Lesson>();
+            var lesson = await repo.GetFirstOrDefaultAsync(
+                predicate: x => x.LessonId == lessonId,
+                include: q => q.Include(l => l.Lectures),
+                asNoTracking: false
+            ) ?? throw new BadHttpRequestException("LessonNotFound");
+
+            if (lesson.Lectures != null && lesson.Lectures.Any())
+                throw new BadHttpRequestException("LessonHasLecturesCannotDelete");
+
+            repo.Delete(lesson);
+            bool isSuccessful = await _unitOfWork.CommitAsync() > 0;
+            return isSuccessful;
+        }
+
+        public async Task<int> CreateOrUpdateLecture(LectureSaveRequest request)
+        {
+            var repo = _unitOfWork.GetRepository<Lecture>();
+            Lecture lecture;
+
+            // Verify lesson exists
+            var lessonRepo = _unitOfWork.GetRepository<Lesson>();
+            var lesson = await lessonRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.LessonId == request.LessonId,
+                asNoTracking: true
+            );
+            if (lesson == null)
+                throw new BadHttpRequestException("LessonNotFound");
+
+            if (request.Id.HasValue)
+            {
+                // Update existing lecture
+                lecture = await repo.GetFirstOrDefaultAsync(
+                    predicate: x => x.LectureId == request.Id.Value,
+                    asNoTracking: false
+                ) ?? throw new BadHttpRequestException("LectureNotFound");
+
+                if (!string.IsNullOrEmpty(request.Title))
+                    lecture.Title = request.Title;
+                if (!string.IsNullOrEmpty(request.Description))
+                    lecture.Description = request.Description;
+                if (!string.IsNullOrEmpty(request.Type))
+                    lecture.Type = request.Type;
+                lecture.DurationMinutes = request.DurationMinutes;
+                if (request.PreviewAvailable.HasValue)
+                    lecture.PreviewAvailable = request.PreviewAvailable.Value;
+                if (!string.IsNullOrEmpty(request.ContentUrl))
+                    lecture.ContentUrl = request.ContentUrl;
+                lecture.Note = request.Note;
+            }
+            else
+            {
+                // Create new lecture
+                lecture = new Lecture
+                {
+                    LessonId = request.LessonId,
+                    Title = request.Title ?? "",
+                    Description = request.Description,
+                    Type = request.Type ?? "video",
+                    DurationMinutes = request.DurationMinutes,
+                    PreviewAvailable = request.PreviewAvailable ?? false,
+                    ContentUrl = request.ContentUrl,
+                    Note = request.Note,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await repo.InsertAsync(lecture);
+            }
+
+            // Handle resources if provided
+            if (request.Resources != null && request.Resources.Any())
+            {
+                var resourceRepo = _unitOfWork.GetRepository<Resource>();
+                foreach (var resourceReq in request.Resources)
+                {
+                    Resource resource;
+                    if (resourceReq.Id.HasValue)
+                    {
+                        resource = await resourceRepo.GetFirstOrDefaultAsync(
+                            predicate: x => x.ResourceId == resourceReq.Id.Value,
+                            asNoTracking: false
+                        );
+                        if (resource != null)
+                        {
+                            resource.Title = resourceReq.Title ?? resource.Title;
+                            resource.Url = resourceReq.Url ?? resource.Url;
+                            resource.Type = resourceReq.Type ?? resource.Type;
+                        }
+                    }
+                    else
+                    {
+                        resource = new Resource
+                        {
+                            LectureId = lecture.LectureId,
+                            Title = resourceReq.Title ?? "",
+                            Url = resourceReq.Url ?? "",
+                            Type = resourceReq.Type ?? "pdf",
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        await resourceRepo.InsertAsync(resource);
+                    }
+                }
+            }
+
+            var isSuccessful = await _unitOfWork.CommitAsync() > 0;
+            if (!isSuccessful)
+                throw new BadHttpRequestException("SaveFailed");
+
+            return lecture.LectureId;
+        }
+
+        public async Task<bool> DeleteLecture(int lectureId)
+        {
+            var repo = _unitOfWork.GetRepository<Lecture>();
+            var lecture = await repo.GetFirstOrDefaultAsync(
+                predicate: x => x.LectureId == lectureId,
+                include: q => q.Include(l => l.Resources).Include(l => l.Questions),
+                asNoTracking: false
+            ) ?? throw new BadHttpRequestException("LectureNotFound");
+
+            if (lecture.Resources != null && lecture.Resources.Any())
+            {
+                var resourceRepo = _unitOfWork.GetRepository<Resource>();
+                foreach (var resource in lecture.Resources)
+                {
+                    resourceRepo.Delete(resource);
+                }
+            }
+
+            repo.Delete(lecture);
+            bool isSuccessful = await _unitOfWork.CommitAsync() > 0;
+            return isSuccessful;
+        }
+
+        public async Task<bool> DeleteResource(int resourceId)
+        {
+            var repo = _unitOfWork.GetRepository<Resource>();
+            var resource = await repo.GetFirstOrDefaultAsync(
+                predicate: x => x.ResourceId == resourceId,
+                asNoTracking: false
+            ) ?? throw new BadHttpRequestException("ResourceNotFound");
+
+            repo.Delete(resource);
+            bool isSuccessful = await _unitOfWork.CommitAsync() > 0;
+            return isSuccessful;
+        }
+
+        public async Task<bool> MarkCourseTrending(int id, bool trending)
+        {
+            var repo = _unitOfWork.GetRepository<Course>();
+            var course = await repo.GetFirstOrDefaultAsync(
+                predicate: x => x.CourseId == id,
+                asNoTracking: false
+            ) ?? throw new BadHttpRequestException("CourseNotFound");
+
+            course.Trending = trending;
+            course.UpdatedAt = DateTime.UtcNow;
+
+            bool isSuccessful = await _unitOfWork.CommitAsync() > 0;
+            return isSuccessful;
+        }
+
+        public async Task<bool> MarkCourseBestseller(int id, bool bestseller)
+        {
+            var repo = _unitOfWork.GetRepository<Course>();
+            var course = await repo.GetFirstOrDefaultAsync(
+                predicate: x => x.CourseId == id,
+                asNoTracking: false
+            ) ?? throw new BadHttpRequestException("CourseNotFound");
+
+            course.Bestseller = bestseller;
+            course.UpdatedAt = DateTime.UtcNow;
+
             bool isSuccessful = await _unitOfWork.CommitAsync() > 0;
             return isSuccessful;
         }

@@ -17,6 +17,8 @@ public partial class CourseReview
 
     public DateTime? CreatedAt { get; set; }
 
+    public int? LikeCount { get; set; }
+
     public virtual Course? Course { get; set; }
 
     public virtual ICollection<ReviewResponse> ReviewResponses { get; set; } = new List<ReviewResponse>();
