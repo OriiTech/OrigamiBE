@@ -524,6 +524,51 @@ namespace Origami.API.Services.Interfaces
             return baseDetail;
         }
 
+        public async Task AddJudgeToChallengeAsync(ChallengeJudgeCommandDto dto)
+        {
+            var challengeRepo = _unitOfWork.GetRepository<Challenge>();
+            var userRepo = _unitOfWork.GetRepository<User>();
+
+            var challenge = await challengeRepo.GetFirstOrDefaultAsync(
+                predicate: c => c.ChallengeId == dto.ChallengeId,
+                include: q => q.Include(c => c.Users),asNoTracking: false
+            ) ?? throw new BadHttpRequestException("ChallengeNotFound");
+
+            var user = await userRepo.GetFirstOrDefaultAsync(
+                predicate: u => u.UserId == dto.UserId
+            ) ?? throw new BadHttpRequestException("UserNotFound");
+
+            if (challenge.Users.Any(u => u.UserId == dto.UserId))
+                throw new BadHttpRequestException("UserAlreadyJudge");
+            challenge.Users.Add(user);
+
+            await _unitOfWork.CommitAsync();
+        }
+
+
+
+        public async Task RemoveJudgeFromChallengeAsync(ChallengeJudgeCommandDto dto)
+        {
+            var challengeRepo = _unitOfWork.GetRepository<Challenge>();
+
+            await _unitOfWork.BeginTransactionAsync();
+
+                var challenge = await challengeRepo.GetFirstOrDefaultAsync(
+                    predicate: c => c.ChallengeId == dto.ChallengeId,
+                    include: q => q.Include(c => c.Users),asNoTracking: false
+                ) ?? throw new BadHttpRequestException("ChallengeNotFound");
+
+                var judge = challenge.Users
+                    .FirstOrDefault(u => u.UserId == dto.UserId);
+
+                if (judge == null)
+                    throw new BadHttpRequestException("JudgeNotFound");
+
+                challenge.Users.Remove(judge);
+
+                await _unitOfWork.CommitAsync();
+
+        }
 
 
         public async Task<IPaginate<GetChallengeResponse>> ViewAllChallenges(ChallengeFilter filter, PagingModel pagingModel)

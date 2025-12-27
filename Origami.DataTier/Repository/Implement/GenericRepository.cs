@@ -244,6 +244,10 @@ namespace Origami.DataTier.Repository.Implement
 
             return await query.Select(selector).ToListAsync();
         }
+        public void Attach(T entity)
+        {
+            _dbContext.Set<T>().Attach(entity);
+        }
 
     }
 }

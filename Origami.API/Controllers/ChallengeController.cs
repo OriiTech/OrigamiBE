@@ -64,5 +64,21 @@ namespace Origami.API.Controllers
             if (!isSuccessful) return Ok("DeleteStatusFailed");
             return Ok("DeleteStatusSuccess");
         }
+        [HttpPost("challenges/judges")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        public async Task<IActionResult> AddJudge([FromBody] ChallengeJudgeCommandDto dto)
+        {
+            await _challengeService.AddJudgeToChallengeAsync(dto);
+            return Ok("AddSucess");
+        }
+
+        [HttpDelete("challenges/judges")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        public async Task<IActionResult> RemoveJudge([FromBody] ChallengeJudgeCommandDto dto)
+        {
+            await _challengeService.RemoveJudgeFromChallengeAsync(dto);
+            return Ok("DeleteSuccess");
+        }
+
     }
 }

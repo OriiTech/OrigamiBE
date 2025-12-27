@@ -14,5 +14,7 @@ namespace Origami.API.Services.Interfaces
         Task<IPaginate<ChallengeListItemDto>> GetChallengeListAsync(ChallengeListFilter filter, PagingModel pagingModel);
         Task<ChallengeDetailDto> GetChallengeDetailAsync(int challengeId);
         Task<int> CreateChallengeAsync(ChallengeCreateDto dto);
+        Task AddJudgeToChallengeAsync(ChallengeJudgeCommandDto dto);
+        Task RemoveJudgeFromChallengeAsync(ChallengeJudgeCommandDto dto);
     }
 }
