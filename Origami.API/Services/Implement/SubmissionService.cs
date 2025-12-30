@@ -103,12 +103,12 @@ namespace Origami.API.Services.Interfaces
             ) ?? throw new BadHttpRequestException("ChallengeNotFound");
 
             var currentPhase = ResolveCurrentPhase(challenge.ChallengeSchedule);
-            var currentUserId = 3;//GetCurrentUserId();
+            var currentUserId = GetCurrentUserId();
 
             var pagedSubmissions = await submissionRepo.GetPagingListAsync(
                 predicate: s =>
-                    s.ChallengeId == challengeId &&
-                    s.Status == "approved",
+                    s.ChallengeId == challengeId,
+                    //&& s.Status == "approved",
                 orderBy: q => q.OrderByDescending(s => s.SubmittedAt),
                 include: q => q
                     .Include(s => s.SubmittedByNavigation)
