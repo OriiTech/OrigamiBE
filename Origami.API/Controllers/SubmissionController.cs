@@ -31,6 +31,17 @@ namespace Origami.API.Controllers
             var response = await _submissionService.ViewAllSubmissions(filter, pagingModel);
             return Ok(response);
         }
+        [HttpGet(ApiEndPointConstant.Submission.SubmissionFeed)]
+        [ProducesResponseType(typeof(SubmissionFeedDto), StatusCodes.Status200OK)]
+        public async Task<IActionResult> LoadSubmissionFeed([FromRoute] int challengeId,[FromQuery] PagingModel pagingModel)
+        {
+            var result = await _submissionService.LoadSubmissionFeedAsync(
+                challengeId,
+                pagingModel
+            );
+
+            return Ok(result);
+        }
 
         [HttpPost(ApiEndPointConstant.Submission.SubmissionsEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]

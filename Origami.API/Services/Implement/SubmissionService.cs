@@ -5,6 +5,7 @@ using Origami.API.Services.Implement;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Submission;
+using Origami.BusinessTier.Utils;
 using Origami.DataTier.Models;
 using Origami.DataTier.Paginate;
 using Origami.DataTier.Repository.Interfaces;
@@ -88,6 +89,211 @@ namespace Origami.API.Services.Interfaces
 
             repo.Delete(entity);
             return await _unitOfWork.CommitAsync() > 0;
+        }
+
+        public async Task<SubmissionFeedDto> LoadSubmissionFeedAsync( int challengeId,PagingModel paging)
+        {
+            var challengeRepo = _unitOfWork.GetRepository<Challenge>();
+            var submissionRepo = _unitOfWork.GetRepository<Submission>();
+
+            var challenge = await challengeRepo.GetFirstOrDefaultAsync(
+                predicate: c => c.ChallengeId == challengeId,
+                include: q => q.Include(c => c.ChallengeSchedule),
+                asNoTracking: true
+            ) ?? throw new BadHttpRequestException("ChallengeNotFound");
+
+            var currentPhase = ResolveCurrentPhase(challenge.ChallengeSchedule);
+            var currentUserId = 3;//GetCurrentUserId();
+
+            var pagedSubmissions = await submissionRepo.GetPagingListAsync(
+                predicate: s =>
+                    s.ChallengeId == challengeId &&
+                    s.Status == "approved",
+                orderBy: q => q.OrderByDescending(s => s.SubmittedAt),
+                include: q => q
+                    .Include(s => s.SubmittedByNavigation)
+                        .ThenInclude(u => u.UserProfile)
+                    .Include(s => s.SubmissionImages)
+                    .Include(s => s.SubmissionFoldingDetail)
+                    .Include(s => s.SubmissionLikes)
+                    .Include(s => s.SubmissionComments)
+                    .Include(s => s.SubmissionViews)
+                    .Include(s => s.Scores)
+                        .ThenInclude(sc => sc.ScoreCriterion)
+                    .Include(s => s.Votes),
+                selector: s => new SubmissionFeedItemDto
+                {
+                    Id = s.SubmissionId,
+
+                    User = new SubmissionUserDto
+                    {
+                        Id = s.SubmittedBy,
+                        Username = s.SubmittedByNavigation.Username,
+                        Avatar = s.SubmittedByNavigation.UserProfile.AvatarUrl
+                    },
+
+                    Title = s.Title,
+                    Description = s.Description,
+
+                    Images = s.SubmissionImages
+                        .OrderBy(i => i.DisplayOrder)
+                        .Select(i => new SubmissionImageDto
+                        {
+                            Url = i.Url,
+                            Thumbnail = i.Thumbnail,
+                            Note = i.Note,
+                            Order = i.DisplayOrder
+                        }).ToList(),
+
+                    FoldingDetails = new FoldingDetailsDto
+                    {
+                        PaperSize = s.SubmissionFoldingDetail.PaperSize,
+                        PaperType = s.SubmissionFoldingDetail.PaperType,
+                        Complexity = s.SubmissionFoldingDetail.Complexity,
+                        FoldingTimeMinute = s.SubmissionFoldingDetail.FoldingTimeMinute,
+                        Source = s.SubmissionFoldingDetail.Source,
+                        OriginalDesigner =
+                            s.SubmissionFoldingDetail.Source != "original"
+                                ? s.SubmissionFoldingDetail.OriginalDesigner
+                                : null
+                    },
+
+                    Interaction = new SubmissionInteractionDto
+                    {
+                        LikesCount = s.SubmissionLikes.Count,
+                        CommentsCount = s.SubmissionComments.Count,
+                        ViewsCount = s.SubmissionViews.Count,
+
+                        UserLiked = s.SubmissionLikes.Any(l => l.UserId == currentUserId),
+                        UserVoted = s.Votes.Any(v => v.UserId == currentUserId),
+
+                        ShareUrl = $"/challenges/{challengeId}/submissions/{s.SubmissionId}"
+                    },
+
+                    ChallengeStats = currentPhase != "submission"
+                        ? new SubmissionChallengeStatsDto
+                        {
+                            AverageScore = s.Scores.Any()
+                                ? s.Scores.Average(sc => sc.Score1)
+                                : null,
+
+                            JudgeScores = s.Scores.Select(sc => new JudgeScoreDto
+                            {
+                                JudgeId = sc.ScoreBy,
+                                Score = sc.Score1,
+                                Criteria = new JudgeScoreCriteriaDto
+                                {
+                                    Creativity = sc.ScoreCriterion.Creativity,
+                                    Execution = sc.ScoreCriterion.Execution,
+                                    Theme = sc.ScoreCriterion.Theme,
+                                    Difficulty = sc.ScoreCriterion.Difficulty
+                                }
+                            }).ToList()
+                        }
+                        : null,
+
+                    Metadata = new SubmissionMetadataDto
+                    {
+                        SubmittedAt = s.SubmittedAt,
+                        UpdatedAt = s.UpdatedAt,
+                        Status = s.Status,
+                        IsSelf = s.SubmittedBy == currentUserId,
+                        IsTeam = s.TeamId != null
+                    }
+                },
+                page: paging.page,
+                size: paging.size
+            );
+
+            var userContext = await BuildSubmissionFeedUserContextAsync(
+                challenge,
+                currentUserId
+            );
+
+            return new SubmissionFeedDto
+            {
+                ChallengeId = challenge.ChallengeId,
+                ChallengeTitle = challenge.Title,
+                CurrentPhase = currentPhase,
+                VotingEndsIn =
+                    currentPhase == "voting" && challenge.ChallengeSchedule?.VotingEnd != null
+                        ? TimeFormatHelper.FormatTimeRemaining(
+                            challenge.ChallengeSchedule.VotingEnd.Value
+                        )
+                        : null,
+                Submissions = pagedSubmissions,
+                UserContext = userContext
+            };
+        }
+
+
+
+
+        private string ResolveCurrentPhase(ChallengeSchedule s)
+        {
+            var now = DateTime.UtcNow;
+
+            if (s.RegistrationStart <= now && now < s.SubmissionStart)
+                return "registration";
+
+            if (s.SubmissionStart <= now && now < s.SubmissionEnd)
+                return "submission";
+
+            if (s.VotingStart <= now && now < s.VotingEnd)
+                return "voting";
+
+            if (s.ResultsDate <= now)
+                return "results";
+
+            return "upcoming";
+        }
+        private async Task<SubmissionFeedUserContextDto> BuildSubmissionFeedUserContextAsync(Challenge challenge, int? currentUserId)
+        {
+            if (currentUserId <= 0)
+            {
+                return new SubmissionFeedUserContextDto
+                {
+                    CanSubmit = false,
+                    HasSubmissions = false,
+                    CanVote = false,
+                    IsJudge = false,
+                    IsOrganizer = false
+                };
+            }
+
+            var submissionRepo = _unitOfWork.GetRepository<Submission>();
+
+            var hasSubmission = await submissionRepo.AnyAsync(
+                s => s.ChallengeId == challenge.ChallengeId &&
+                     (
+                         s.SubmittedBy == currentUserId ||
+                         (s.Team != null && s.Team.TeamMembers.Any(tm => tm.UserId == currentUserId))
+                     )
+            );
+
+            var isOrganizer = challenge.CreatedBy == currentUserId;
+
+            var isJudge = challenge.Users.Any(u => u.UserId == currentUserId);
+
+            var currentPhase = ResolveCurrentPhase(challenge.ChallengeSchedule);
+
+            return new SubmissionFeedUserContextDto
+            {
+                IsOrganizer = isOrganizer,
+                IsJudge = isJudge,
+
+                HasSubmissions = hasSubmission,
+
+                CanSubmit =
+                    currentPhase == "submission" &&
+                    !hasSubmission &&
+                    !isJudge,
+
+                CanVote =
+                    currentPhase == "voting" &&
+                    !isOrganizer &&
+                    !isJudge
+            };
         }
 
         private async Task EnsureChallengeExists(int challengeId)

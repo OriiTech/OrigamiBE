@@ -11,5 +11,6 @@ namespace Origami.API.Services.Interfaces
         Task<IPaginate<GetSubmissionResponse>> ViewAllSubmissions(SubmissionFilter filter, PagingModel pagingModel);
         Task<bool> UpdateSubmission(int id, SubmissionInfo request);
         Task<bool> DeleteSubmission(int id);
+        Task<SubmissionFeedDto> LoadSubmissionFeedAsync(int challengeId, PagingModel paging);
     }
 }
