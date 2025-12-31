@@ -151,6 +151,8 @@ namespace Origami.BusinessTier.Constants
             public const string SubmissionsEndPoint = ApiEndpoint + "/submissions";
             public const string SubmissionEndPoint = SubmissionsEndPoint + "/{id}";
             public const string SubmissionFeed = "challenges/{challengeId}/submissions/feed";
+            public const string SaveSubmission = "submissions/save";
+            public const string SubmitSubmission = "submissions/submit";
         }
 
         //Leaderboard

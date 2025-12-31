@@ -12,5 +12,6 @@ namespace Origami.API.Services.Interfaces
         Task<bool> UpdateSubmission(int id, SubmissionInfo request);
         Task<bool> DeleteSubmission(int id);
         Task<SubmissionFeedDto> LoadSubmissionFeedAsync(int challengeId, PagingModel paging);
+        Task<int> SaveSubmissionAsync(SubmissionSaveDto dto, bool isSubmit);
     }
 }

@@ -50,6 +50,30 @@ namespace Origami.API.Controllers
             var response = await _submissionService.CreateNewSubmission(request);
             return Ok(response);
         }
+        [HttpPost(ApiEndPointConstant.Submission.SaveSubmission)]
+        [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+        public async Task<IActionResult> SaveSubmission([FromBody] SubmissionSaveDto dto)
+        {
+            var submissionId = await _submissionService
+                .SaveSubmissionAsync(dto, isSubmit: false);
+
+            return Ok(new
+            {
+                submissionId
+            });
+        }
+        [HttpPost(ApiEndPointConstant.Submission.SubmitSubmission)]
+        [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+        public async Task<IActionResult> SubmitSubmission([FromBody] SubmissionSaveDto dto)
+        {
+            var submissionId = await _submissionService
+                .SaveSubmissionAsync(dto, isSubmit: true);
+
+            return Ok(new
+            {
+                submissionId
+            });
+        }
 
         [HttpPatch(ApiEndPointConstant.Submission.SubmissionEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]

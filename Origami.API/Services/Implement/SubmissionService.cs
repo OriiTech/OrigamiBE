@@ -226,8 +226,117 @@ namespace Origami.API.Services.Interfaces
             };
         }
 
+        public async Task<int> SaveSubmissionAsync(SubmissionSaveDto dto,bool isSubmit)
+        {
+            var submissionRepo = _unitOfWork.GetRepository<Submission>();
+            var challengeRepo = _unitOfWork.GetRepository<Challenge>();
+
+            var currentUserId = GetCurrentUserId();
+
+            //Validate challenge 
+            var challenge = await challengeRepo.GetFirstOrDefaultAsync(
+                predicate: c => c.ChallengeId == dto.ChallengeId,
+                include: q => q.Include(c => c.ChallengeSchedule),
+                asNoTracking: true
+            ) ?? throw new BadHttpRequestException("ChallengeNotFound");
+
+            var currentPhase = ResolveCurrentPhase(challenge.ChallengeSchedule);
+
+            if (isSubmit && currentPhase != "submission")
+                throw new BadHttpRequestException("ChallengeNotInSubmissionPhase");
+
+            //Load existing submission (draft or submitted)
+            var submission = await submissionRepo.GetFirstOrDefaultAsync(
+                predicate: s =>
+                    s.ChallengeId == dto.ChallengeId &&
+                    s.SubmittedBy == currentUserId,
+                include: q => q
+                    .Include(s => s.SubmissionImages)
+                    .Include(s => s.SubmissionFoldingDetail),
+                asNoTracking: false
+            );
+
+            var isNew = submission == null;
+
+            if (isNew)
+            {
+                submission = new Submission
+                {
+                    ChallengeId = dto.ChallengeId,
+                    SubmittedBy = (int)currentUserId,
+                    Status = "draft"
+                };
+
+                await submissionRepo.InsertAsync(submission);
+                await _unitOfWork.CommitAsync();
+            }
+
+            submission.Title = dto.Title;
+            submission.Description = dto.Description;
+            submission.UpdatedAt = DateTime.UtcNow;
+
+            submission.TeamId = dto.IsTeam ? dto.TeamId : null;
+
+            if (submission.SubmissionFoldingDetail == null)
+            {
+                submission.SubmissionFoldingDetail = new SubmissionFoldingDetail();
+            }
+
+            submission.SubmissionFoldingDetail.PaperSize = dto.FoldingDetails.PaperSize;
+            submission.SubmissionFoldingDetail.PaperType = dto.FoldingDetails.PaperType;
+            submission.SubmissionFoldingDetail.Complexity = dto.FoldingDetails.Complexity;
+            submission.SubmissionFoldingDetail.FoldingTimeMinute =
+                dto.FoldingDetails.FoldingTimeMinute;
+            submission.SubmissionFoldingDetail.Source = dto.FoldingDetails.Source;
+            submission.SubmissionFoldingDetail.OriginalDesigner =
+                dto.FoldingDetails.Source != "original"
+                    ? dto.FoldingDetails.OriginalDesigner
+                    : null;
+
+            submission.SubmissionImages.Clear();
+
+            foreach (var img in dto.Images.OrderBy(i => i.Order))
+            {
+                submission.SubmissionImages.Add(new SubmissionImage
+                {
+                    Url = img.Url,
+                    Thumbnail = img.Thumbnail,
+                    Note = img.Note,
+                    DisplayOrder = img.Order
+                });
+            }
+
+            //Submit validation 
+            if (isSubmit)
+            {
+                ValidateSubmissionForSubmit(submission);
+                submission.Status = "submitted";
+                submission.SubmittedAt = DateTime.UtcNow;
+            }
+
+            await _unitOfWork.CommitAsync();
+            return submission.SubmissionId;
+        }
 
 
+
+        private void ValidateSubmissionForSubmit(Submission submission)
+        {
+            if (string.IsNullOrWhiteSpace(submission.Title))
+                throw new BadHttpRequestException("TitleRequired");
+
+            if (!submission.SubmissionImages.Any())
+                throw new BadHttpRequestException("AtLeastOneImageRequired");
+
+            var folding = submission.SubmissionFoldingDetail;
+
+            if (folding == null)
+                throw new BadHttpRequestException("FoldingDetailsRequired");
+
+            if (folding.Source != "original"
+                && string.IsNullOrWhiteSpace(folding.OriginalDesigner))
+                throw new BadHttpRequestException("OriginalDesignerRequired");
+        }
 
         private string ResolveCurrentPhase(ChallengeSchedule s)
         {
