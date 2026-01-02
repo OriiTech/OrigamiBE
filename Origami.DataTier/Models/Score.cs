@@ -17,5 +17,7 @@ public partial class Score
 
     public virtual User ScoreByNavigation { get; set; } = null!;
 
+    public virtual ScoreCriterion? ScoreCriterion { get; set; }
+
     public virtual Submission Submission { get; set; } = null!;
 }

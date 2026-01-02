@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Test - Origami Tech Sharing</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .test-badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #2196F3;
+        }
+        .details {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .details-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .details-item:last-child {
+            border-bottom: none;
+        }
+        .details-label {
+            font-weight: bold;
+            color: #666;
+            display: inline-block;
+            width: 150px;
+        }
+        .details-value {
+            color: #333;
+        }
+        .footer {
+            background: #f9f9f9;
+            padding: 20px 30px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            border-top: 1px solid #eee;
+        }
+        .emoji {
+            font-size: 48px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎌 Origami Tech Sharing</h1>
+        </div>
+        <div class="content">
+            <span class="test-badge">TEST EMAIL</span>
+            
+            <div class="emoji" style="text-align: center;">✅</div>
+            
+            <h2>Chúc mừng! Email Service đã hoạt động thành công!</h2>
+            
+            <p>Xin chào <strong>{{UserName}}</strong>,</p>
+            
+            <p>Đây là email test từ hệ thống <strong>Origami Tech Sharing</strong>. Nếu bạn nhận được email này, có nghĩa là EmailService đã được cấu hình và hoạt động đúng!</p>
+            
+            <div class="info-box">
+                <h3>📧 Thông tin Email Test</h3>
+                <p>Email này được gửi từ API test endpoint để kiểm tra tính năng gửi email của hệ thống.</p>
+            </div>
+            
+            <div class="details">
+                <div class="details-item">
+                    <span class="details-label">Người nhận:</span>
+                    <span class="details-value">{{UserEmail}}</span>
+                </div>
+                <div class="details-item">
+                    <span class="details-label">Thời gian:</span>
+                    <span class="details-value">{{CurrentTime}}</span>
+                </div>
+                <div class="details-item">
+                    <span class="details-label">Template:</span>
+                    <span class="details-value">TemplateTest</span>
+                </div>
+                <div class="details-item">
+                    <span class="details-label">Trạng thái:</span>
+                    <span class="details-value" style="color: #28a745; font-weight: bold;">✓ Thành công</span>
+                </div>
+            </div>
+            
+            <p><strong>Lưu ý:</strong> Đây chỉ là email test. Bạn có thể bỏ qua email này.</p>
+            
+            <p>Trân trọng,<br>
+            <strong>Đội ngũ Origami Tech Sharing</strong></p>
+        </div>
+        <div class="footer">
+            <p>© 2025 Origami Tech Sharing. All rights reserved.</p>
+            <p>Email này được gửi tự động, vui lòng không trả lời.</p>
+        </div>
+    </div>
+</body>
+</html>
+
