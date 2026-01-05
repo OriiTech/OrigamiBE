@@ -9,6 +9,7 @@ using Origami.DataTier.Models;
 using Origami.DataTier.Paginate;
 using Origami.DataTier.Repository.Interfaces;
 using System.Linq.Expressions;
+using System.Text.Json;
 
 namespace Origami.API.Services.Interfaces
 {
@@ -186,159 +187,7 @@ namespace Origami.API.Services.Interfaces
             return _mapper.Map<GetChallengeResponse>(challenge);
         }
 
-        //public async Task<ChallengeDetailDto> GetChallengeDetailAsync(int challengeId)
-        //{
-        //    var repo = _unitOfWork.GetRepository<Challenge>();
-
-        //    var challenge = await repo.GetFirstOrDefaultAsync(
-        //        predicate: c => c.ChallengeId == challengeId,
-        //        include: q => q
-        //            .Include(c => c.Categories)
-        //            .Include(c => c.CreatedByNavigation)
-        //                .ThenInclude(u => u.UserProfile)
-        //            .Include(c => c.Submissions)
-        //                .ThenInclude(s => s.Team)
-        //                    .ThenInclude(t => t.TeamMembers)
-        //            .Include(c => c.Users)
-        //                .ThenInclude(u => u.UserProfile)
-        //            .Include(c => c.ChallengeRules)
-        //                .ThenInclude(r => r.ChallengeRuleItems)
-        //            .Include(c => c.ChallengePrizes)
-        //                .ThenInclude(p => p.Badges)
-        //            .Include(c => c.ChallengeSchedule)
-        //    ) ?? throw new BadHttpRequestException("ChallengeNotFound");
-
-        //    var phase = ResolveCurrentPhase(challenge.ChallengeSchedule);
-
-        //    // Update runtime phase
-        //    challenge.Phase = phase;
-
-        //    var totalParticipants = challenge.Submissions
-        //        .SelectMany(s =>
-        //            s.Team != null
-        //                ? s.Team.TeamMembers.Select(tm => tm.UserId)
-        //                : new[] { s.SubmittedBy }
-        //        )
-        //        .Distinct()
-        //        .Count();
-
-        //    return new ChallengeDetailDto
-        //    {
-        //        Id = challenge.ChallengeId,
-        //        Title = challenge.Title,
-        //        Description = challenge.Description,
-
-        //        PromoPhoto = new PromoPhotoDto
-        //        {
-        //            Url = challenge.PromoPhoto
-        //        },
-
-        //        Organizer = new OrganizerDetailDto
-        //        {
-        //            Id = challenge.CreatedByNavigation.UserId,
-        //            Name = challenge.CreatedByNavigation.Username,
-        //            Avatar = challenge.CreatedByNavigation.UserProfile?.AvatarUrl,
-        //            Bio = challenge.CreatedByNavigation.UserProfile?.Bio
-        //        },
-
-        //        Details = new ChallengeDetailInfoDto
-        //        {
-        //            Status = challenge.Status,
-        //            Phase = phase,
-        //            Level = challenge.Level,
-        //            Category = challenge.Categories
-        //                .Select(c => c.CategoryName)
-        //                .ToList(),
-
-        //            PaperRequirements = null,
-        //            FoldingConstraints = null,
-        //            PhotographyRequirements = null,
-        //            ModelRequirements = null,
-        //            OtherRequirements = new(),
-
-        //            MaximumSubmissions = null,
-        //            TeamSize = challenge.MaxTeamSize
-        //        },
-
-        //        Schedule = challenge.ChallengeSchedule == null
-        //            ? null
-        //            : new ChallengeScheduleDto
-        //            {
-        //                Dates = new ChallengeScheduleDatesDto
-        //                {
-        //                    RegistrationStart = challenge.ChallengeSchedule.RegistrationStart,
-        //                    SubmissionStart = challenge.ChallengeSchedule.SubmissionStart,
-        //                    SubmissionEnd = challenge.ChallengeSchedule.SubmissionEnd,
-        //                    VotingStart = challenge.ChallengeSchedule.VotingStart,
-        //                    VotingEnd = challenge.ChallengeSchedule.VotingEnd,
-        //                    ResultsDate = challenge.ChallengeSchedule.ResultsDate
-        //                },
-        //                //Timeline = null // DB chưa support
-        //            },
-
-        //        Rules = challenge.ChallengeRules.Select(r => new ChallengeRuleDto
-        //        {
-        //            Section = r.Section,
-        //            Items = r.ChallengeRuleItems
-        //                .Select(i => i.Content)
-        //                .ToList()
-        //        }).ToList(),
-
-        //        Prize = new ChallengePrizeDto
-        //        {
-        //            TotalPool = challenge.PrizePool,
-        //            Currency = true,
-        //            Ranks = challenge.ChallengePrizes
-        //                .OrderBy(p => p.Rank)
-        //                .Select(p => new PrizeRankDto
-        //                {
-        //                    Rank = p.Rank,
-        //                    Cash = p.Cash,
-        //                    Description = p.Description,
-        //                    Badges = p.Badges.Select(b => new BadgeDto
-        //                    {
-        //                        Id = b.BadgeId,
-        //                        Name = b.BadgeName,
-        //                        //Icon = b.Icon
-        //                    }).ToList()
-        //                }).ToList()
-        //        },
-
-        //        Judges = challenge.Users.Select(u => new JudgeDto
-        //        {
-        //            Id = u.UserId,
-        //            Name = u.Username,
-        //            Role = "judge",
-        //            Avatar = u.UserProfile?.AvatarUrl,
-        //            Bio = u.UserProfile?.Bio
-        //        }).ToList(),
-
-        //        UserContext = new ChallengeUserContextDto
-        //        {
-        //            CanSubmit = phase == "submission",
-        //            HasSubmissions = challenge.Submissions.Any(),
-        //            CanVote = phase == "voting",
-        //            IsJudge = challenge.Users.Any(u => u.UserId == GetCurrentUserId()),
-        //            IsOrganizer = challenge.CreatedBy == GetCurrentUserId()
-        //        },
-
-        //        Stats = new ChallengeStatsDetailDto
-        //        {
-        //            TotalParticipants = totalParticipants,
-        //            TotalSubmissions = challenge.Submissions.Count,
-        //            TotalViews = 0,
-        //            Rating = 0
-        //        },
-
-        //        Metadata = new ChallengeMetadataDto
-        //        {
-        //            CreatedAt = challenge.CreatedAt,
-        //            UpdatedAt = challenge.UpdatedAt,
-        //            PublishedAt = challenge.CreatedAt
-        //        }
-        //    };
-        //}
-
+ 
         private async Task<ChallengeDetailDto> LoadChallengeDetailBaseAsync(int challengeId)
         {
             var repo = _unitOfWork.GetRepository<Challenge>();
@@ -545,8 +394,6 @@ namespace Origami.API.Services.Interfaces
             await _unitOfWork.CommitAsync();
         }
 
-
-
         public async Task RemoveJudgeFromChallengeAsync(ChallengeJudgeCommandDto dto)
         {
             var challengeRepo = _unitOfWork.GetRepository<Challenge>();
@@ -728,6 +575,85 @@ namespace Origami.API.Services.Interfaces
             bool isSuccessful = await _unitOfWork.CommitAsync() > 0;
             return isSuccessful;
         }
+
+        
+        public async Task ApplyPrizePoolAsync(int challengeId)
+        {
+            var challengeRepo = _unitOfWork.GetRepository<Challenge>();
+            var snapshotRepo = _unitOfWork.GetRepository<SubmissionSnapshot>();
+            var prizeRepo = _unitOfWork.GetRepository<ChallengePrize>();
+            var userRepo = _unitOfWork.GetRepository<User>();
+            var balanceRepo = _unitOfWork.GetRepository<Wallet>();
+            var userBadgeRepo = _unitOfWork.GetRepository<UserBadge>();
+
+            var challenge = await challengeRepo.GetFirstOrDefaultAsync(
+                predicate: c => c.ChallengeId == challengeId
+            ) ?? throw new BadHttpRequestException("ChallengeNotFound");
+
+            var snapshots = await snapshotRepo.GetListAsync(
+                predicate: s => s.ChallengeId == challengeId
+            );
+
+            var prizes = await prizeRepo.GetListAsync(
+                predicate: p => p.ChallengeId == challengeId
+            );
+
+            await _unitOfWork.BeginTransactionAsync();
+
+            try
+            {
+                foreach (var prize in prizes)
+                {
+                    var winnerSnapshot = snapshots
+                        .FirstOrDefault(s => s.Rank == prize.Rank);
+
+                    if (winnerSnapshot == null)
+                        continue;
+
+                    var userId = winnerSnapshot.UserId;
+
+                    // 1. Apply cash
+                    if (prize.Cash > 0)
+                    {
+                        var balance = await balanceRepo.GetFirstOrDefaultAsync(
+                            predicate: b => b.UserId == userId,
+                            asNoTracking: false
+                        );
+
+                        balance.Balance += prize.Cash;
+                    }
+
+                }
+                challenge.Status = "completed";
+
+                await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+        }
+
+        private decimal CalculateCommunityScore(
+            int votes,
+            int likes,
+            int comments,
+            int maxVotes,
+            int maxLikes,
+            int maxComments)
+        {
+            decimal voteScore = maxVotes == 0 ? 0 : (decimal)votes / maxVotes;
+            decimal likeScore = maxLikes == 0 ? 0 : (decimal)likes / maxLikes;
+            decimal commentScore = maxComments == 0 ? 0 : (decimal)comments / maxComments;
+
+            return (voteScore * 0.5m +
+                    likeScore * 0.3m +
+                    commentScore * 0.2m) * 100;
+        }
+
+
         private string ResolveCurrentPhase(ChallengeSchedule s)
         {
             var now = DateTime.UtcNow;

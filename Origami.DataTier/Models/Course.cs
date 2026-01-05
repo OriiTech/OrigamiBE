@@ -25,6 +25,18 @@ public partial class Course
 
     public bool? Bestseller { get; set; }
 
+    public string? Subtitle { get; set; }
+
+    public string? Objectives { get; set; }
+
+    public bool? PaidOnly { get; set; }
+
+    public bool? Trending { get; set; }
+
+    public string? PreviewVideoUrl { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
     public virtual ICollection<CourseAccess> CourseAccesses { get; set; } = new List<CourseAccess>();
 
     public virtual ICollection<CourseReview> CourseReviews { get; set; } = new List<CourseReview>();

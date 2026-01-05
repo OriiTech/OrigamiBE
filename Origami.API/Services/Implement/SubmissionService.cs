@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Origami.API.Services.Implement;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Payload;
+using Origami.BusinessTier.Payload.Challenge;
 using Origami.BusinessTier.Payload.Submission;
 using Origami.BusinessTier.Utils;
 using Origami.DataTier.Models;
@@ -316,6 +317,57 @@ namespace Origami.API.Services.Interfaces
 
             await _unitOfWork.CommitAsync();
             return submission.SubmissionId;
+        }
+
+        public async Task<PersonalRankingDto> GetPersonalRankingAsync(int challengeId)
+        {
+            var currentUserId = GetCurrentUserId();
+
+            var submissionRepo = _unitOfWork.GetRepository<Submission>();
+            var voteRepo = _unitOfWork.GetRepository<Vote>();
+
+            var submission = await submissionRepo.GetFirstOrDefaultAsync(
+                predicate: s =>
+                    s.ChallengeId == challengeId &&
+                    s.SubmittedBy == currentUserId &&
+                    s.Status == "approved",
+                include: q => q
+                    .Include(s => s.SubmissionComments)
+                    .Include(s => s.SubmissionViews),
+                asNoTracking: true
+            );
+
+            if (submission == null)
+            {
+                return new PersonalRankingDto
+                {
+                    ChallengeId = challengeId,
+                    HasSubmission = false,
+                    Rank = null,
+                    Score = null,
+                    VotesReceived = 0,
+                    CommentsReceived = 0,
+                    SubmissionViews = 0
+                };
+            }
+
+            var votesReceived = await voteRepo.CountAsync(
+                v => v.SubmissionId == submission.SubmissionId
+            );
+
+            return new PersonalRankingDto
+            {
+                ChallengeId = challengeId,
+                HasSubmission = true,
+
+                // sau khi challenge finalize mới có
+                Rank = null,
+                Score = null,
+
+                VotesReceived = votesReceived,
+                CommentsReceived = submission.SubmissionComments.Count,
+                SubmissionViews = submission.SubmissionViews.Count
+            };
         }
 
 

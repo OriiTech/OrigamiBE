@@ -6,6 +6,10 @@ namespace Origami.DataTier.Models;
 
 public partial class OrigamiDbContext : DbContext
 {
+    public OrigamiDbContext()
+    {
+    }
+
     public OrigamiDbContext(DbContextOptions<OrigamiDbContext> options)
         : base(options)
     {
@@ -103,6 +107,8 @@ public partial class OrigamiDbContext : DbContext
 
     public virtual DbSet<SubmissionLike> SubmissionLikes { get; set; }
 
+    public virtual DbSet<SubmissionSnapshot> SubmissionSnapshots { get; set; }
+
     public virtual DbSet<SubmissionView> SubmissionViews { get; set; }
 
     public virtual DbSet<TargetLevel> TargetLevels { get; set; }
@@ -126,6 +132,10 @@ public partial class OrigamiDbContext : DbContext
     public virtual DbSet<Vote> Votes { get; set; }
 
     public virtual DbSet<Wallet> Wallets { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer("Server=.;Database=OrigamiDB;User Id=sa;Password=1;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -512,12 +522,20 @@ public partial class OrigamiDbContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasColumnName("language");
+            entity.Property(e => e.Objectives).HasColumnName("objectives");
+            entity.Property(e => e.PaidOnly).HasColumnName("paid_only");
+            entity.Property(e => e.PreviewVideoUrl)
+                .HasMaxLength(512)
+                .HasColumnName("preview_video_url");
             entity.Property(e => e.Price)
                 .HasColumnType("decimal(10, 2)")
                 .HasColumnName("price");
             entity.Property(e => e.PublishedAt)
                 .HasColumnType("datetime")
                 .HasColumnName("published_at");
+            entity.Property(e => e.Subtitle)
+                .HasMaxLength(255)
+                .HasColumnName("subtitle");
             entity.Property(e => e.TeacherId).HasColumnName("teacher_id");
             entity.Property(e => e.ThumbnailUrl)
                 .HasMaxLength(255)
@@ -526,6 +544,10 @@ public partial class OrigamiDbContext : DbContext
             entity.Property(e => e.Title)
                 .HasMaxLength(255)
                 .HasColumnName("title");
+            entity.Property(e => e.Trending).HasColumnName("trending");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
 
             entity.HasOne(d => d.Teacher).WithMany(p => p.Courses)
                 .HasForeignKey(d => d.TeacherId)
@@ -604,6 +626,7 @@ public partial class OrigamiDbContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+            entity.Property(e => e.LikeCount).HasColumnName("like_count");
             entity.Property(e => e.Rating).HasColumnName("rating");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
@@ -897,6 +920,7 @@ public partial class OrigamiDbContext : DbContext
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.DurationMinutes).HasColumnName("duration_minutes");
             entity.Property(e => e.LessonId).HasColumnName("lesson_id");
+            entity.Property(e => e.Note).HasColumnName("note");
             entity.Property(e => e.PreviewAvailable).HasColumnName("preview_available");
             entity.Property(e => e.Title)
                 .HasMaxLength(255)
@@ -1470,6 +1494,43 @@ public partial class OrigamiDbContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_SubmissionLike_User");
+        });
+
+        modelBuilder.Entity<SubmissionSnapshot>(entity =>
+        {
+            entity.HasKey(e => e.SnapshotId).HasName("PK__Submissi__C27CFBF76EEA5D97");
+
+            entity.ToTable("SubmissionSnapshot");
+
+            entity.HasIndex(e => new { e.ChallengeId, e.Rank }, "IX_SubmissionSnapshot_Challenge_Rank");
+
+            entity.HasIndex(e => new { e.ChallengeId, e.SubmissionId }, "UX_SubmissionSnapshot_Challenge_Submission").IsUnique();
+
+            entity.Property(e => e.SnapshotId).HasColumnName("snapshot_id");
+            entity.Property(e => e.ChallengeId).HasColumnName("challenge_id");
+            entity.Property(e => e.CommunityScore)
+                .HasColumnType("decimal(6, 2)")
+                .HasColumnName("community_score");
+            entity.Property(e => e.CommunityStatsJson).HasColumnName("community_stats_json");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.IsLocked)
+                .HasDefaultValue(true)
+                .HasColumnName("is_locked");
+            entity.Property(e => e.JudgeCriteriaJson).HasColumnName("judge_criteria_json");
+            entity.Property(e => e.JudgeScore)
+                .HasColumnType("decimal(6, 2)")
+                .HasColumnName("judge_score");
+            entity.Property(e => e.JudgeScoresJson).HasColumnName("judge_scores_json");
+            entity.Property(e => e.Rank).HasColumnName("rank");
+            entity.Property(e => e.SnapshotAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("snapshot_at");
+            entity.Property(e => e.SubmissionId).HasColumnName("submission_id");
+            entity.Property(e => e.TeamId).HasColumnName("team_id");
+            entity.Property(e => e.TotalScore)
+                .HasColumnType("decimal(6, 2)")
+                .HasColumnName("total_score");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
         });
 
         modelBuilder.Entity<SubmissionView>(entity =>

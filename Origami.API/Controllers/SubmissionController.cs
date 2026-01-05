@@ -92,5 +92,16 @@ namespace Origami.API.Controllers
             if (!isSuccessful) return Ok("DeleteStatusFailed");
             return Ok("DeleteStatusSuccess");
         }
+        [HttpGet("challenges/{challengeId}/personal-ranking")]
+        [ProducesResponseType(typeof(PersonalRankingResponse), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetPersonalRanking(int challengeId)
+        {
+            var result = await _submissionService.GetPersonalRankingAsync(challengeId);
+            return Ok(new PersonalRankingResponse
+            {
+                PersonalRanking = result
+            });
+        }
+
     }
 }
