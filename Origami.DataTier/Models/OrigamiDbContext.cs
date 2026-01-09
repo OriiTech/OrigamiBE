@@ -107,6 +107,8 @@ public partial class OrigamiDbContext : DbContext
 
     public virtual DbSet<SubmissionLike> SubmissionLikes { get; set; }
 
+    public virtual DbSet<SubmissionSnapshot> SubmissionSnapshots { get; set; }
+
     public virtual DbSet<SubmissionView> SubmissionViews { get; set; }
 
     public virtual DbSet<TargetLevel> TargetLevels { get; set; }
@@ -1494,6 +1496,46 @@ public partial class OrigamiDbContext : DbContext
                 .HasConstraintName("FK_SubmissionLike_User");
         });
 
+        modelBuilder.Entity<SubmissionSnapshot>(entity =>
+        {
+            entity.HasKey(e => e.SnapshotId).HasName("PK__Submissi__C27CFBF76EEA5D97");
+
+            entity.ToTable("SubmissionSnapshot");
+
+            entity.HasIndex(e => new { e.ChallengeId, e.Rank }, "IX_SubmissionSnapshot_Challenge_Rank");
+
+            entity.HasIndex(e => new { e.ChallengeId, e.SubmissionId }, "UX_SubmissionSnapshot_Challenge_Submission").IsUnique();
+
+            entity.Property(e => e.SnapshotId).HasColumnName("snapshot_id");
+            entity.Property(e => e.ChallengeId).HasColumnName("challenge_id");
+            entity.Property(e => e.CommunityScore)
+                .HasColumnType("decimal(6, 2)")
+                .HasColumnName("community_score");
+            entity.Property(e => e.CommunityStatsJson).HasColumnName("community_stats_json");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.IsLocked)
+                .HasDefaultValue(true)
+                .HasColumnName("is_locked");
+            entity.Property(e => e.JudgeCriteriaJson).HasColumnName("judge_criteria_json");
+            entity.Property(e => e.JudgeScore)
+                .HasColumnType("decimal(6, 2)")
+                .HasColumnName("judge_score");
+            entity.Property(e => e.JudgeScoresJson).HasColumnName("judge_scores_json");
+            entity.Property(e => e.Rank).HasColumnName("rank");
+            entity.Property(e => e.SnapshotAt)
+                .HasDefaultValueSql("(sysutcdatetime())")
+                .HasColumnName("snapshot_at");
+            entity.Property(e => e.SubmissionId).HasColumnName("submission_id");
+            entity.Property(e => e.TeamId).HasColumnName("team_id");
+            entity.Property(e => e.TotalScore)
+                .HasColumnType("decimal(6, 2)")
+                .HasColumnName("total_score");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+        });
+
+        modelBuilder.Entity<SubmissionView>(entity =>
+        {
+            entity.HasKey(e => e.ViewId).HasName("PK__Submissi__B5A34EE21FD18240");
         modelBuilder.Entity<SubmissionView>(entity =>
         {
             entity.HasKey(e => e.ViewId).HasName("PK__Submissi__B5A34EE292D8AF25");
