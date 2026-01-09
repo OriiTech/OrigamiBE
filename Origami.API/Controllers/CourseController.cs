@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Course;
+using Origami.BusinessTier.Utils.EnumConvert;
 using Origami.DataTier.Paginate;
 
 namespace Origami.API.Controllers
@@ -34,6 +36,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = RoleConstants.Sensei)]
         [HttpPost(ApiEndPointConstant.Course.CoursesEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateCourse(CourseInfo request)
@@ -42,6 +45,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = RoleConstants.Sensei)]
         [HttpPatch(ApiEndPointConstant.Course.CourseEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateCourseInfo(int id, CourseInfo request)
@@ -51,6 +55,7 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+        [Authorize(Roles = RoleConstants.Sensei)]
         [HttpDelete(ApiEndPointConstant.Course.CourseEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteCourse(int id)
@@ -111,6 +116,7 @@ namespace Origami.API.Controllers
         }
 
         // --- New APIs for Course Save (theo courseSave trong JSON) ---
+        [Authorize(Roles = RoleConstants.Sensei)]
         [HttpPost(ApiEndPointConstant.Course.CoursesEndPoint + "/save")]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateOrUpdateCourse(CourseSaveRequest request)
@@ -120,6 +126,7 @@ namespace Origami.API.Controllers
         }
 
         // --- New APIs for Lesson Management (theo lessonSave trong JSON) ---
+        [Authorize(Roles = RoleConstants.Sensei)]
         [HttpPost(ApiEndPointConstant.Course.CoursesEndPoint + "/lessons/save")]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateOrUpdateLesson(LessonSaveRequest request)
@@ -128,6 +135,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = RoleConstants.Sensei)]
         [HttpDelete(ApiEndPointConstant.Course.CoursesEndPoint + "/lessons/{lessonId}")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteLesson(int lessonId)
@@ -138,6 +146,7 @@ namespace Origami.API.Controllers
         }
 
         // --- New APIs for Lecture Management ---
+        [Authorize(Roles = RoleConstants.Sensei)]
         [HttpPost(ApiEndPointConstant.Course.CoursesEndPoint + "/lectures/save")]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateOrUpdateLecture(LectureSaveRequest request)
@@ -146,6 +155,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = RoleConstants.Sensei)]
         [HttpDelete(ApiEndPointConstant.Course.CoursesEndPoint + "/lectures/{lectureId}")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteLecture(int lectureId)
@@ -156,6 +166,7 @@ namespace Origami.API.Controllers
         }
 
         // --- New APIs for Resource Management ---
+        [Authorize(Roles = RoleConstants.Sensei)]
         [HttpDelete(ApiEndPointConstant.Course.CoursesEndPoint + "/resources/{resourceId}")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteResource(int resourceId)
@@ -166,6 +177,7 @@ namespace Origami.API.Controllers
         }
 
         // --- New APIs for Course Flags ---
+        [Authorize(Roles = RoleConstants.Sensei)]
         [HttpPatch(ApiEndPointConstant.Course.CourseEndPoint + "/trending")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> MarkCourseTrending(int id, [FromBody] bool trending)
@@ -175,6 +187,7 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+        [Authorize(Roles = RoleConstants.Sensei)]
         [HttpPatch(ApiEndPointConstant.Course.CourseEndPoint + "/bestseller")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> MarkCourseBestseller(int id, [FromBody] bool bestseller)

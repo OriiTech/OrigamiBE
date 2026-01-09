@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Step;
+using Origami.BusinessTier.Utils.EnumConvert;
 using Origami.DataTier.Paginate;
 
 namespace Origami.API.Controllers
@@ -31,6 +33,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = RoleConstants.User)]
         [HttpPost(ApiEndPointConstant.Step.StepsEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status201Created)]
         public async Task<IActionResult> CreateStep([FromBody] StepInfo request)
@@ -39,6 +42,7 @@ namespace Origami.API.Controllers
             return CreatedAtAction(nameof(GetStep), new { id }, new { id });
         }
 
+        [Authorize(Roles = RoleConstants.User)]
         [HttpPatch(ApiEndPointConstant.Step.StepEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateStepInfo(int id, [FromBody] StepInfo request)
