@@ -365,7 +365,7 @@ namespace Origami.API.Services.Interfaces
         {
             var baseDetail = await LoadChallengeDetailBaseAsync(challengeId);
 
-            var currentUserId = 3; //GetCurrentUserId();
+            var currentUserId = GetCurrentUserId();
 
             baseDetail.UserContext =
                 await BuildUserContextAsync(challengeId, currentUserId);

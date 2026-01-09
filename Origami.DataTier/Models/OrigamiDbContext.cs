@@ -1536,302 +1536,302 @@ public partial class OrigamiDbContext : DbContext
         modelBuilder.Entity<SubmissionView>(entity =>
         {
             entity.HasKey(e => e.ViewId).HasName("PK__Submissi__B5A34EE21FD18240");
-        modelBuilder.Entity<SubmissionView>(entity =>
-        {
-            entity.HasKey(e => e.ViewId).HasName("PK__Submissi__B5A34EE292D8AF25");
+            modelBuilder.Entity<SubmissionView>(entity =>
+            {
+                entity.HasKey(e => e.ViewId).HasName("PK__Submissi__B5A34EE292D8AF25");
 
-            entity.ToTable("SubmissionView");
+                entity.ToTable("SubmissionView");
 
-            entity.Property(e => e.ViewId).HasColumnName("view_id");
-            entity.Property(e => e.SubmissionId).HasColumnName("submission_id");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
-            entity.Property(e => e.ViewedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("viewed_at");
+                entity.Property(e => e.ViewId).HasColumnName("view_id");
+                entity.Property(e => e.SubmissionId).HasColumnName("submission_id");
+                entity.Property(e => e.UserId).HasColumnName("user_id");
+                entity.Property(e => e.ViewedAt)
+                    .HasDefaultValueSql("(getdate())")
+                    .HasColumnType("datetime")
+                    .HasColumnName("viewed_at");
 
-            entity.HasOne(d => d.Submission).WithMany(p => p.SubmissionViews)
-                .HasForeignKey(d => d.SubmissionId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_SubmissionView_Submission");
+                entity.HasOne(d => d.Submission).WithMany(p => p.SubmissionViews)
+                    .HasForeignKey(d => d.SubmissionId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_SubmissionView_Submission");
 
-            entity.HasOne(d => d.User).WithMany(p => p.SubmissionViews)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK_SubmissionView_User");
-        });
+                entity.HasOne(d => d.User).WithMany(p => p.SubmissionViews)
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("FK_SubmissionView_User");
+            });
 
-        modelBuilder.Entity<TargetLevel>(entity =>
-        {
-            entity.HasKey(e => e.LevelId).HasName("PK__Target_l__03461643B39AC844");
+            modelBuilder.Entity<TargetLevel>(entity =>
+            {
+                entity.HasKey(e => e.LevelId).HasName("PK__Target_l__03461643B39AC844");
 
-            entity.ToTable("Target_level");
+                entity.ToTable("Target_level");
 
-            entity.Property(e => e.LevelId).HasColumnName("level_id");
-            entity.Property(e => e.Name)
-                .HasMaxLength(100)
-                .HasColumnName("name");
-        });
+                entity.Property(e => e.LevelId).HasColumnName("level_id");
+                entity.Property(e => e.Name)
+                    .HasMaxLength(100)
+                    .HasColumnName("name");
+            });
 
-        modelBuilder.Entity<Team>(entity =>
-        {
-            entity.HasKey(e => e.TeamId).HasName("PK__Team__123AE7B996C8A353");
+            modelBuilder.Entity<Team>(entity =>
+            {
+                entity.HasKey(e => e.TeamId).HasName("PK__Team__123AE7B996C8A353");
 
-            entity.ToTable("Team");
+                entity.ToTable("Team");
 
-            entity.Property(e => e.TeamId).HasColumnName("TeamID");
-            entity.Property(e => e.ChallengeId).HasColumnName("ChallengeID");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.TeamName).HasMaxLength(255);
+                entity.Property(e => e.TeamId).HasColumnName("TeamID");
+                entity.Property(e => e.ChallengeId).HasColumnName("ChallengeID");
+                entity.Property(e => e.CreatedAt)
+                    .HasDefaultValueSql("(getdate())")
+                    .HasColumnType("datetime");
+                entity.Property(e => e.TeamName).HasMaxLength(255);
 
-            entity.HasOne(d => d.Challenge).WithMany(p => p.Teams)
-                .HasForeignKey(d => d.ChallengeId)
-                .HasConstraintName("FK_Team_Challenge");
-        });
+                entity.HasOne(d => d.Challenge).WithMany(p => p.Teams)
+                    .HasForeignKey(d => d.ChallengeId)
+                    .HasConstraintName("FK_Team_Challenge");
+            });
 
-        modelBuilder.Entity<TeamMember>(entity =>
-        {
-            entity.HasKey(e => e.TeamMemberId).HasName("PK__TeamMemb__C7C0928526483173");
+            modelBuilder.Entity<TeamMember>(entity =>
+            {
+                entity.HasKey(e => e.TeamMemberId).HasName("PK__TeamMemb__C7C0928526483173");
 
-            entity.ToTable("TeamMember");
+                entity.ToTable("TeamMember");
 
-            entity.HasIndex(e => new { e.TeamId, e.UserId }, "UQ_TeamMember").IsUnique();
+                entity.HasIndex(e => new { e.TeamId, e.UserId }, "UQ_TeamMember").IsUnique();
 
-            entity.Property(e => e.TeamMemberId).HasColumnName("TeamMemberID");
-            entity.Property(e => e.JoinedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.TeamId).HasColumnName("TeamID");
-            entity.Property(e => e.UserId).HasColumnName("UserID");
+                entity.Property(e => e.TeamMemberId).HasColumnName("TeamMemberID");
+                entity.Property(e => e.JoinedAt)
+                    .HasDefaultValueSql("(getdate())")
+                    .HasColumnType("datetime");
+                entity.Property(e => e.TeamId).HasColumnName("TeamID");
+                entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.Team).WithMany(p => p.TeamMembers)
-                .HasForeignKey(d => d.TeamId)
-                .HasConstraintName("FK_TeamMember_Team");
+                entity.HasOne(d => d.Team).WithMany(p => p.TeamMembers)
+                    .HasForeignKey(d => d.TeamId)
+                    .HasConstraintName("FK_TeamMember_Team");
 
-            entity.HasOne(d => d.User).WithMany(p => p.TeamMembers)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK_TeamMember_User");
-        });
+                entity.HasOne(d => d.User).WithMany(p => p.TeamMembers)
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("FK_TeamMember_User");
+            });
 
-        modelBuilder.Entity<Ticket>(entity =>
-        {
-            entity.HasKey(e => e.TicketId).HasName("PK__Ticket__D596F96BD015F51C");
+            modelBuilder.Entity<Ticket>(entity =>
+            {
+                entity.HasKey(e => e.TicketId).HasName("PK__Ticket__D596F96BD015F51C");
 
-            entity.ToTable("Ticket");
+                entity.ToTable("Ticket");
 
-            entity.Property(e => e.TicketId).HasColumnName("ticket_id");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("created_at");
-            entity.Property(e => e.Status)
-                .HasMaxLength(20)
-                .HasColumnName("status");
-            entity.Property(e => e.TicketTypeId).HasColumnName("ticket_type_id");
-            entity.Property(e => e.Title).HasMaxLength(255);
-            entity.Property(e => e.UserId).HasColumnName("user_id");
+                entity.Property(e => e.TicketId).HasColumnName("ticket_id");
+                entity.Property(e => e.CreatedAt)
+                    .HasDefaultValueSql("(getdate())")
+                    .HasColumnType("datetime")
+                    .HasColumnName("created_at");
+                entity.Property(e => e.Status)
+                    .HasMaxLength(20)
+                    .HasColumnName("status");
+                entity.Property(e => e.TicketTypeId).HasColumnName("ticket_type_id");
+                entity.Property(e => e.Title).HasMaxLength(255);
+                entity.Property(e => e.UserId).HasColumnName("user_id");
 
-            entity.HasOne(d => d.TicketType).WithMany(p => p.Tickets)
-                .HasForeignKey(d => d.TicketTypeId)
-                .HasConstraintName("FK__Ticket__ticket_t__3A179ED3");
+                entity.HasOne(d => d.TicketType).WithMany(p => p.Tickets)
+                    .HasForeignKey(d => d.TicketTypeId)
+                    .HasConstraintName("FK__Ticket__ticket_t__3A179ED3");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Tickets)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__Ticket__user_id__3B0BC30C");
-        });
+                entity.HasOne(d => d.User).WithMany(p => p.Tickets)
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("FK__Ticket__user_id__3B0BC30C");
+            });
 
-        modelBuilder.Entity<TicketType>(entity =>
-        {
-            entity.HasKey(e => e.TicketTypeId).HasName("PK__Ticket_t__9531B7D191378DCB");
+            modelBuilder.Entity<TicketType>(entity =>
+            {
+                entity.HasKey(e => e.TicketTypeId).HasName("PK__Ticket_t__9531B7D191378DCB");
 
-            entity.ToTable("Ticket_type");
+                entity.ToTable("Ticket_type");
 
-            entity.Property(e => e.TicketTypeId).HasColumnName("ticket_type_id");
-            entity.Property(e => e.TicketTypeName)
-                .HasMaxLength(50)
-                .HasColumnName("ticket_type_name");
-        });
+                entity.Property(e => e.TicketTypeId).HasColumnName("ticket_type_id");
+                entity.Property(e => e.TicketTypeName)
+                    .HasMaxLength(50)
+                    .HasColumnName("ticket_type_name");
+            });
 
-        modelBuilder.Entity<Transaction>(entity =>
-        {
-            entity.HasKey(e => e.TransactionId).HasName("PK__Transact__85C600AF675022F2");
+            modelBuilder.Entity<Transaction>(entity =>
+            {
+                entity.HasKey(e => e.TransactionId).HasName("PK__Transact__85C600AF675022F2");
 
-            entity.ToTable("Transaction");
+                entity.ToTable("Transaction");
 
-            entity.HasIndex(e => e.OrderId, "IX_Transaction_OrderId");
+                entity.HasIndex(e => e.OrderId, "IX_Transaction_OrderId");
 
-            entity.Property(e => e.TransactionId).HasColumnName("transaction_id");
-            entity.Property(e => e.Amount)
-                .HasColumnType("decimal(18, 2)")
-                .HasColumnName("amount");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("created_at");
-            entity.Property(e => e.OrderId).HasColumnName("order_id");
-            entity.Property(e => e.ReceiverWalletId).HasColumnName("receiver_wallet_id");
-            entity.Property(e => e.SenderWalletId).HasColumnName("sender_wallet_id");
-            entity.Property(e => e.Status)
-                .HasMaxLength(20)
-                .HasColumnName("status");
-            entity.Property(e => e.TransactionType)
-                .HasMaxLength(30)
-                .HasColumnName("transaction_type");
+                entity.Property(e => e.TransactionId).HasColumnName("transaction_id");
+                entity.Property(e => e.Amount)
+                    .HasColumnType("decimal(18, 2)")
+                    .HasColumnName("amount");
+                entity.Property(e => e.CreatedAt)
+                    .HasDefaultValueSql("(getdate())")
+                    .HasColumnType("datetime")
+                    .HasColumnName("created_at");
+                entity.Property(e => e.OrderId).HasColumnName("order_id");
+                entity.Property(e => e.ReceiverWalletId).HasColumnName("receiver_wallet_id");
+                entity.Property(e => e.SenderWalletId).HasColumnName("sender_wallet_id");
+                entity.Property(e => e.Status)
+                    .HasMaxLength(20)
+                    .HasColumnName("status");
+                entity.Property(e => e.TransactionType)
+                    .HasMaxLength(30)
+                    .HasColumnName("transaction_type");
 
-            entity.HasOne(d => d.Order).WithMany(p => p.Transactions)
-                .HasForeignKey(d => d.OrderId)
-                .HasConstraintName("FK__Transacti__order__3BFFE745");
+                entity.HasOne(d => d.Order).WithMany(p => p.Transactions)
+                    .HasForeignKey(d => d.OrderId)
+                    .HasConstraintName("FK__Transacti__order__3BFFE745");
 
-            entity.HasOne(d => d.ReceiverWallet).WithMany(p => p.TransactionReceiverWallets)
-                .HasForeignKey(d => d.ReceiverWalletId)
-                .HasConstraintName("FK__Transacti__recei__3CF40B7E");
+                entity.HasOne(d => d.ReceiverWallet).WithMany(p => p.TransactionReceiverWallets)
+                    .HasForeignKey(d => d.ReceiverWalletId)
+                    .HasConstraintName("FK__Transacti__recei__3CF40B7E");
 
-            entity.HasOne(d => d.SenderWallet).WithMany(p => p.TransactionSenderWallets)
-                .HasForeignKey(d => d.SenderWalletId)
-                .HasConstraintName("FK__Transacti__sende__3DE82FB7");
-        });
+                entity.HasOne(d => d.SenderWallet).WithMany(p => p.TransactionSenderWallets)
+                    .HasForeignKey(d => d.SenderWalletId)
+                    .HasConstraintName("FK__Transacti__sende__3DE82FB7");
+            });
 
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.HasKey(e => e.UserId).HasName("PK__User__B9BE370F96F30EB3");
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.HasKey(e => e.UserId).HasName("PK__User__B9BE370F96F30EB3");
 
-            entity.ToTable("User");
+                entity.ToTable("User");
 
-            entity.HasIndex(e => e.Email, "UQ__User__AB6E6164DF88A60C").IsUnique();
+                entity.HasIndex(e => e.Email, "UQ__User__AB6E6164DF88A60C").IsUnique();
 
-            entity.Property(e => e.UserId).HasColumnName("user_id");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("created_at");
-            entity.Property(e => e.Email)
-                .HasMaxLength(100)
-                .HasColumnName("email");
-            entity.Property(e => e.Password)
-                .HasMaxLength(255)
-                .HasColumnName("password");
-            entity.Property(e => e.RoleId).HasColumnName("role_id");
-            entity.Property(e => e.UpdatedAt)
-                .HasColumnType("datetime")
-                .HasColumnName("updated_at");
-            entity.Property(e => e.Username)
-                .HasMaxLength(100)
-                .HasColumnName("username");
+                entity.Property(e => e.UserId).HasColumnName("user_id");
+                entity.Property(e => e.CreatedAt)
+                    .HasDefaultValueSql("(getdate())")
+                    .HasColumnType("datetime")
+                    .HasColumnName("created_at");
+                entity.Property(e => e.Email)
+                    .HasMaxLength(100)
+                    .HasColumnName("email");
+                entity.Property(e => e.Password)
+                    .HasMaxLength(255)
+                    .HasColumnName("password");
+                entity.Property(e => e.RoleId).HasColumnName("role_id");
+                entity.Property(e => e.UpdatedAt)
+                    .HasColumnType("datetime")
+                    .HasColumnName("updated_at");
+                entity.Property(e => e.Username)
+                    .HasMaxLength(100)
+                    .HasColumnName("username");
 
-            entity.HasOne(d => d.Role).WithMany(p => p.Users)
-                .HasForeignKey(d => d.RoleId)
-                .HasConstraintName("FK__User__role_id__3EDC53F0");
-        });
+                entity.HasOne(d => d.Role).WithMany(p => p.Users)
+                    .HasForeignKey(d => d.RoleId)
+                    .HasConstraintName("FK__User__role_id__3EDC53F0");
+            });
 
-        modelBuilder.Entity<UserBadge>(entity =>
-        {
-            entity.HasKey(e => new { e.UserId, e.BadgeId }).HasName("PK__User_bad__C7C7BE6AF08D0D77");
+            modelBuilder.Entity<UserBadge>(entity =>
+            {
+                entity.HasKey(e => new { e.UserId, e.BadgeId }).HasName("PK__User_bad__C7C7BE6AF08D0D77");
 
-            entity.ToTable("User_badge");
+                entity.ToTable("User_badge");
 
-            entity.Property(e => e.UserId).HasColumnName("user_id");
-            entity.Property(e => e.BadgeId).HasColumnName("badge_id");
-            entity.Property(e => e.EarnedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("earned_at");
+                entity.Property(e => e.UserId).HasColumnName("user_id");
+                entity.Property(e => e.BadgeId).HasColumnName("badge_id");
+                entity.Property(e => e.EarnedAt)
+                    .HasDefaultValueSql("(getdate())")
+                    .HasColumnType("datetime")
+                    .HasColumnName("earned_at");
 
-            entity.HasOne(d => d.Badge).WithMany(p => p.UserBadges)
-                .HasForeignKey(d => d.BadgeId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__User_badg__badge__3FD07829");
+                entity.HasOne(d => d.Badge).WithMany(p => p.UserBadges)
+                    .HasForeignKey(d => d.BadgeId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK__User_badg__badge__3FD07829");
 
-            entity.HasOne(d => d.User).WithMany(p => p.UserBadges)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__User_badg__user___40C49C62");
-        });
+                entity.HasOne(d => d.User).WithMany(p => p.UserBadges)
+                    .HasForeignKey(d => d.UserId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK__User_badg__user___40C49C62");
+            });
 
-        modelBuilder.Entity<UserProfile>(entity =>
-        {
-            entity.HasKey(e => e.UserId);
+            modelBuilder.Entity<UserProfile>(entity =>
+            {
+                entity.HasKey(e => e.UserId);
 
-            entity.ToTable("UserProfile");
+                entity.ToTable("UserProfile");
 
-            entity.Property(e => e.UserId)
-                .ValueGeneratedNever()
-                .HasColumnName("user_id");
-            entity.Property(e => e.AvatarUrl)
-                .HasMaxLength(255)
-                .IsUnicode(false)
-                .HasColumnName("avatar_url");
-            entity.Property(e => e.Bio).HasColumnName("bio");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("created_at");
-            entity.Property(e => e.DisplayName)
-                .HasMaxLength(255)
-                .HasColumnName("display_name");
+                entity.Property(e => e.UserId)
+                    .ValueGeneratedNever()
+                    .HasColumnName("user_id");
+                entity.Property(e => e.AvatarUrl)
+                    .HasMaxLength(255)
+                    .IsUnicode(false)
+                    .HasColumnName("avatar_url");
+                entity.Property(e => e.Bio).HasColumnName("bio");
+                entity.Property(e => e.CreatedAt)
+                    .HasDefaultValueSql("(getdate())")
+                    .HasColumnType("datetime")
+                    .HasColumnName("created_at");
+                entity.Property(e => e.DisplayName)
+                    .HasMaxLength(255)
+                    .HasColumnName("display_name");
 
-            entity.HasOne(d => d.User).WithOne(p => p.UserProfile)
-                .HasForeignKey<UserProfile>(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_UserProfile_User");
-        });
+                entity.HasOne(d => d.User).WithOne(p => p.UserProfile)
+                    .HasForeignKey<UserProfile>(d => d.UserId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_UserProfile_User");
+            });
 
-        modelBuilder.Entity<Vote>(entity =>
-        {
-            entity.HasKey(e => e.VoteId).HasName("PK__Vote__9F5405AE911B0D52");
+            modelBuilder.Entity<Vote>(entity =>
+            {
+                entity.HasKey(e => e.VoteId).HasName("PK__Vote__9F5405AE911B0D52");
 
-            entity.ToTable("Vote");
+                entity.ToTable("Vote");
 
-            entity.HasIndex(e => new { e.SubmissionId, e.UserId }, "UQ_Vote").IsUnique();
+                entity.HasIndex(e => new { e.SubmissionId, e.UserId }, "UQ_Vote").IsUnique();
 
-            entity.HasIndex(e => new { e.UserId, e.SubmissionId }, "UX_Vote_User_Submission").IsUnique();
+                entity.HasIndex(e => new { e.UserId, e.SubmissionId }, "UX_Vote_User_Submission").IsUnique();
 
-            entity.Property(e => e.VoteId).HasColumnName("vote_id");
-            entity.Property(e => e.SubmissionId).HasColumnName("submission_id");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
-            entity.Property(e => e.VotedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("voted_at");
+                entity.Property(e => e.VoteId).HasColumnName("vote_id");
+                entity.Property(e => e.SubmissionId).HasColumnName("submission_id");
+                entity.Property(e => e.UserId).HasColumnName("user_id");
+                entity.Property(e => e.VotedAt)
+                    .HasDefaultValueSql("(getdate())")
+                    .HasColumnType("datetime")
+                    .HasColumnName("voted_at");
 
-            entity.HasOne(d => d.Submission).WithMany(p => p.Votes)
-                .HasForeignKey(d => d.SubmissionId)
-                .HasConstraintName("FK_Vote_Submission");
+                entity.HasOne(d => d.Submission).WithMany(p => p.Votes)
+                    .HasForeignKey(d => d.SubmissionId)
+                    .HasConstraintName("FK_Vote_Submission");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Votes)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Vote_User");
-        });
+                entity.HasOne(d => d.User).WithMany(p => p.Votes)
+                    .HasForeignKey(d => d.UserId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Vote_User");
+            });
 
-        modelBuilder.Entity<Wallet>(entity =>
-        {
-            entity.HasKey(e => e.WalletId).HasName("PK__Wallet__0EE6F041108BBFE6");
+            modelBuilder.Entity<Wallet>(entity =>
+            {
+                entity.HasKey(e => e.WalletId).HasName("PK__Wallet__0EE6F041108BBFE6");
 
-            entity.ToTable("Wallet");
+                entity.ToTable("Wallet");
 
-            entity.Property(e => e.WalletId).HasColumnName("wallet_id");
-            entity.Property(e => e.Balance)
-                .HasDefaultValue(0m)
-                .HasColumnType("decimal(18, 2)")
-                .HasColumnName("balance");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("created_at");
-            entity.Property(e => e.UpdatedAt)
-                .HasColumnType("datetime")
-                .HasColumnName("updated_at");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
+                entity.Property(e => e.WalletId).HasColumnName("wallet_id");
+                entity.Property(e => e.Balance)
+                    .HasDefaultValue(0m)
+                    .HasColumnType("decimal(18, 2)")
+                    .HasColumnName("balance");
+                entity.Property(e => e.CreatedAt)
+                    .HasDefaultValueSql("(getdate())")
+                    .HasColumnType("datetime")
+                    .HasColumnName("created_at");
+                entity.Property(e => e.UpdatedAt)
+                    .HasColumnType("datetime")
+                    .HasColumnName("updated_at");
+                entity.Property(e => e.UserId).HasColumnName("user_id");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Wallets)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Wallet__user_id__44952D46");
-        });
+                entity.HasOne(d => d.User).WithMany(p => p.Wallets)
+                    .HasForeignKey(d => d.UserId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK__Wallet__user_id__44952D46");
+            });
 
-        OnModelCreatingPartial(modelBuilder);
-    }
+            OnModelCreatingPartial(modelBuilder);
+        }); }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }
