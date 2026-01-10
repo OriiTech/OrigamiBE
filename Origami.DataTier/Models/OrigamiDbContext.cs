@@ -133,19 +133,6 @@ public partial class OrigamiDbContext : DbContext
 
     public virtual DbSet<Wallet> Wallets { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            // Use PostgreSQL connection string from environment
-            var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__PostgreSQLDatabase");
-            if (!string.IsNullOrEmpty(connectionString))
-            {
-                optionsBuilder.UseNpgsql(connectionString);
-            }
-        }
-    }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Answer>(entity =>
