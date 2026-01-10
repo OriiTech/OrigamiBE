@@ -28,19 +28,39 @@ if (!string.IsNullOrEmpty(port))
 }
 var firebaseSection = builder.Configuration.GetSection("Firebase");
 
-var credentialPath = firebaseSection["CredentialPath"]
-    ?? throw new InvalidOperationException("Firebase:CredentialPath is not configured");
+// Kiểm tra xem có Firebase credentials từ biến môi trường không
+var firebaseCredentialsJson = Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS_JSON");
+GoogleCredential? credential = null;
 
-var credentialFile = Path.Combine(
-    builder.Environment.ContentRootPath,
-    credentialPath
-);
+if (!string.IsNullOrEmpty(firebaseCredentialsJson))
+{
+    // Nếu có biến môi trường, đọc trực tiếp từ JSON string
+    credential = GoogleCredential.FromJson(firebaseCredentialsJson);
+}
+else
+{
+    // Nếu không có biến môi trường, sử dụng file từ config
+    var credentialPath = firebaseSection["CredentialPath"]
+        ?? throw new InvalidOperationException("Firebase:CredentialPath is not configured and FIREBASE_CREDENTIALS_JSON environment variable is not set");
 
-if (FirebaseApp.DefaultInstance == null)
+    var credentialFile = Path.Combine(
+        builder.Environment.ContentRootPath,
+        credentialPath
+    );
+
+    if (!File.Exists(credentialFile))
+    {
+        throw new FileNotFoundException($"Firebase credentials file not found at: {credentialFile}. Please set FIREBASE_CREDENTIALS_JSON environment variable or ensure the file exists.");
+    }
+
+    credential = GoogleCredential.FromFile(credentialFile);
+}
+
+if (FirebaseApp.DefaultInstance == null && credential != null)
 {
     FirebaseApp.Create(new AppOptions
     {
-        Credential = GoogleCredential.FromFile(credentialFile)
+        Credential = credential
     });
 }
 
