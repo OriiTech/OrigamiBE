@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Submission;
+using Origami.BusinessTier.Utils.EnumConvert;
 
 namespace Origami.API.Controllers
 {
@@ -43,6 +45,7 @@ namespace Origami.API.Controllers
             return Ok(result);
         }
 
+        [Authorize(Roles = RoleConstants.User)]
         [HttpPost(ApiEndPointConstant.Submission.SubmissionsEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateSubmission(SubmissionInfo request)
@@ -75,6 +78,7 @@ namespace Origami.API.Controllers
             });
         }
 
+        [Authorize(Roles = RoleConstants.User)]
         [HttpPatch(ApiEndPointConstant.Submission.SubmissionEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateSubmission(int id, SubmissionInfo request)
@@ -84,6 +88,7 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+        [Authorize(Roles = RoleConstants.User)]
         [HttpDelete(ApiEndPointConstant.Submission.SubmissionEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteSubmission(int id)

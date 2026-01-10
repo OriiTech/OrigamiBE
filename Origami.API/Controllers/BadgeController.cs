@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Badge;
+using Origami.BusinessTier.Utils.EnumConvert;
 using Origami.DataTier.Paginate;
 
 namespace Origami.API.Controllers
@@ -20,6 +22,7 @@ namespace Origami.API.Controllers
             _badgeService = badgeService;
         }
 
+        [Authorize(Roles = RoleConstants.Staff)]
         [HttpPost(ApiEndPointConstant.Badge.BadgesEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateBadge(BadgeInfo request)
@@ -46,6 +49,7 @@ namespace Origami.API.Controllers
             return Ok(result);
         }
 
+        [Authorize(Roles = RoleConstants.Staff)]
         [HttpPatch(ApiEndPointConstant.Badge.BadgeEndPoint)]
         public async Task<IActionResult> UpdateBadge(int id, BadgeInfo request)
         {
@@ -53,6 +57,7 @@ namespace Origami.API.Controllers
             return Ok(success ? "UpdateBadgeSuccess" : "UpdateBadgeFailed");
         }
 
+        [Authorize(Roles = RoleConstants.Staff)]
         [HttpDelete(ApiEndPointConstant.Badge.BadgeEndPoint)]
         public async Task<IActionResult> DeleteBadge(int id)
         {

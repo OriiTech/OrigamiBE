@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Favorite;
+using Origami.BusinessTier.Utils.EnumConvert;
 using Origami.DataTier.Paginate;
 
 namespace Origami.API.Controllers
@@ -33,6 +35,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = RoleConstants.User)]
         [HttpPost(ApiEndPointConstant.Favorite.FavoritesEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status201Created)]
         public async Task<IActionResult> CreateFavorite([FromBody] FavoriteInfo request)
@@ -41,6 +44,7 @@ namespace Origami.API.Controllers
             return CreatedAtAction(nameof(GetFavorite), new { id }, new { id });
         }
 
+        [Authorize(Roles = RoleConstants.User)]
         [HttpDelete(ApiEndPointConstant.Favorite.FavoriteEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteFavorite(int id)
