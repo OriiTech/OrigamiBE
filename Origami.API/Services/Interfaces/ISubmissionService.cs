@@ -1,4 +1,5 @@
 ﻿using Origami.BusinessTier.Payload;
+using Origami.BusinessTier.Payload.Challenge;
 using Origami.BusinessTier.Payload.Submission;
 using Origami.DataTier.Paginate;
 
@@ -11,5 +12,8 @@ namespace Origami.API.Services.Interfaces
         Task<IPaginate<GetSubmissionResponse>> ViewAllSubmissions(SubmissionFilter filter, PagingModel pagingModel);
         Task<bool> UpdateSubmission(int id, SubmissionInfo request);
         Task<bool> DeleteSubmission(int id);
+        Task<SubmissionFeedDto> LoadSubmissionFeedAsync(int challengeId, PagingModel paging);
+        Task<int> SaveSubmissionAsync(SubmissionSaveDto dto, bool isSubmit);
+        Task<PersonalRankingDto> GetPersonalRankingAsync(int challengeId);
     }
 }

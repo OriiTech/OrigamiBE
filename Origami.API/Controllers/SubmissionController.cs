@@ -33,6 +33,17 @@ namespace Origami.API.Controllers
             var response = await _submissionService.ViewAllSubmissions(filter, pagingModel);
             return Ok(response);
         }
+        [HttpGet(ApiEndPointConstant.Submission.SubmissionFeed)]
+        [ProducesResponseType(typeof(SubmissionFeedDto), StatusCodes.Status200OK)]
+        public async Task<IActionResult> LoadSubmissionFeed([FromRoute] int challengeId,[FromQuery] PagingModel pagingModel)
+        {
+            var result = await _submissionService.LoadSubmissionFeedAsync(
+                challengeId,
+                pagingModel
+            );
+
+            return Ok(result);
+        }
 
         [Authorize(Roles = RoleConstants.User)]
         [HttpPost(ApiEndPointConstant.Submission.SubmissionsEndPoint)]
@@ -41,6 +52,30 @@ namespace Origami.API.Controllers
         {
             var response = await _submissionService.CreateNewSubmission(request);
             return Ok(response);
+        }
+        [HttpPost(ApiEndPointConstant.Submission.SaveSubmission)]
+        [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+        public async Task<IActionResult> SaveSubmission([FromBody] SubmissionSaveDto dto)
+        {
+            var submissionId = await _submissionService
+                .SaveSubmissionAsync(dto, isSubmit: false);
+
+            return Ok(new
+            {
+                submissionId
+            });
+        }
+        [HttpPost(ApiEndPointConstant.Submission.SubmitSubmission)]
+        [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+        public async Task<IActionResult> SubmitSubmission([FromBody] SubmissionSaveDto dto)
+        {
+            var submissionId = await _submissionService
+                .SaveSubmissionAsync(dto, isSubmit: true);
+
+            return Ok(new
+            {
+                submissionId
+            });
         }
 
         [Authorize(Roles = RoleConstants.User)]
@@ -62,5 +97,16 @@ namespace Origami.API.Controllers
             if (!isSuccessful) return Ok("DeleteStatusFailed");
             return Ok("DeleteStatusSuccess");
         }
+        [HttpGet("challenges/{challengeId}/personal-ranking")]
+        [ProducesResponseType(typeof(PersonalRankingResponse), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetPersonalRanking(int challengeId)
+        {
+            var result = await _submissionService.GetPersonalRankingAsync(challengeId);
+            return Ok(new PersonalRankingResponse
+            {
+                PersonalRanking = result
+            });
+        }
+
     }
 }

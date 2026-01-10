@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Origami.DataTier.Repository.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace Origami.DataTier.Repository.Implement
     {
         public TContext Context { get; }
         private Dictionary<Type, object> _repositories;
-
+        private IDbContextTransaction? _transaction;
         public UnitOfWork(TContext context)
         {
             Context = context;
@@ -60,6 +61,31 @@ namespace Origami.DataTier.Repository.Implement
                 var exceptionMessage = string.Join(Environment.NewLine,
                     validationErrors.Select(error => $"Properties {error.MemberNames} Error: {error.ErrorMessage}"));
                 throw new Exception(exceptionMessage);
+            }
+        }
+        public async Task BeginTransactionAsync()
+        {
+            if (_transaction == null)
+                _transaction = await Context.Database.BeginTransactionAsync();
+        }
+
+        public async Task CommitTransactionAsync()
+        {
+            if (_transaction != null)
+            {
+                await _transaction.CommitAsync();
+                await _transaction.DisposeAsync();
+                _transaction = null;
+            }
+        }
+
+        public async Task RollbackTransactionAsync()
+        {
+            if (_transaction != null)
+            {
+                await _transaction.RollbackAsync();
+                await _transaction.DisposeAsync();
+                _transaction = null;
             }
         }
     }
