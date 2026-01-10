@@ -4,6 +4,7 @@ using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Guide;
+using Origami.BusinessTier.Utils.EnumConvert;
 using Origami.DataTier.Paginate;
 
 namespace Origami.API.Controllers
@@ -33,7 +34,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
         [HttpPost(ApiEndPointConstant.Guide.GuideViewEndPoint)]
-        [Authorize]
+        [Authorize(Roles = RoleConstants.User)]
         public async Task<IActionResult> IncreaseGuideView(int id)
         {
             await _guideService.IncreaseView(id);
@@ -54,6 +55,7 @@ namespace Origami.API.Controllers
             var response = await _guideService.ViewAllGuideCard(filter, pagingModel);
             return Ok(response);
         }
+        [Authorize(Roles = RoleConstants.User)]
         [HttpPost(ApiEndPointConstant.Guide.GuidesEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status201Created)]
         public async Task<IActionResult> CreateGuide([FromBody] GuideSaveRequest request)
@@ -62,6 +64,7 @@ namespace Origami.API.Controllers
             return Ok(new { guideId = id });
         }
 
+        [Authorize(Roles = RoleConstants.User)]
         [HttpPatch(ApiEndPointConstant.Guide.GuideEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateGuideInfo(int id, [FromBody] GuideInfo request)

@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Category;
+using Origami.BusinessTier.Utils.EnumConvert;
 
 namespace Origami.API.Controllers
 {
@@ -32,6 +34,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = RoleConstants.Staff)]
         [HttpPost(ApiEndPointConstant.Category.CategoriesEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateCategory(CategoryInfo request)
@@ -40,6 +43,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = RoleConstants.Staff)]
         [HttpPatch(ApiEndPointConstant.Category.CategoryEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateCategoryInfo(int id, CategoryInfo request)
@@ -49,6 +53,7 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+        [Authorize(Roles = RoleConstants.Staff)]
         [HttpDelete(ApiEndPointConstant.Category.CategoryEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteCategory(int id)

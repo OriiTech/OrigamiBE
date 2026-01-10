@@ -42,6 +42,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = RoleConstants.Sensei)]
         [HttpPatch(ApiEndPointConstant.Score.ScoreEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateScore(int id, ScoreInfo request)
@@ -51,6 +52,7 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+        [Authorize(Roles = RoleConstants.Sensei)]
         [HttpDelete(ApiEndPointConstant.Score.ScoreEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteScore(int id)

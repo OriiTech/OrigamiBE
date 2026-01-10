@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.User;
+using Origami.BusinessTier.Utils.EnumConvert;
 
 namespace Origami.API.Controllers
 {
@@ -31,6 +33,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = RoleConstants.User)]
         [HttpPatch(ApiEndPointConstant.User.UserEndPoint)]
         [ProducesResponseType(typeof(GetUserResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateUserInfo(int id, UserInfo request)
@@ -39,6 +42,7 @@ namespace Origami.API.Controllers
             if (!isSuccessful) return Ok("UpdateStatusFailed");
             return Ok("UpdateStatusSuccess");
         }
+        [Authorize(Roles = RoleConstants.Staff)]
         [HttpPatch(ApiEndPointConstant.User.UpdateUserRoleEndPoint)]
         [ProducesResponseType(typeof(UpdateUserRoleResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateUserRole(int id, [FromBody] UpdateUserRoleRequest request, [FromHeader(Name = "X-Admin-Email")] string? adminEmail)

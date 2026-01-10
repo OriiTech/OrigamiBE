@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Role;
+using Origami.BusinessTier.Utils.EnumConvert;
 
 namespace Origami.API.Controllers
 {
@@ -32,6 +34,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = RoleConstants.Staff)]
         [HttpPost(ApiEndPointConstant.Role.RolesEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateRole(RoleInfo request)
@@ -40,6 +43,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = RoleConstants.Staff)]
         [HttpPatch(ApiEndPointConstant.Role.RoleEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateRoleInfo(int id, RoleInfo request)
@@ -49,6 +53,7 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+        [Authorize(Roles = RoleConstants.Staff)]
         [HttpDelete(ApiEndPointConstant.Role.RoleEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteRole(int id)

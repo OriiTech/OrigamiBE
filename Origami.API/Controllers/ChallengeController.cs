@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Challenge;
 using Origami.DataTier.Paginate;
+using Origami.BusinessTier.Utils.EnumConvert;
 
 namespace Origami.API.Controllers
 {
@@ -39,6 +41,8 @@ namespace Origami.API.Controllers
             var response = await _challengeService.GetChallengeListAsync(filter, pagingModel);
             return Ok(response);
         }
+
+        [Authorize(Roles = RoleConstants.Staff)]
         [HttpPost(ApiEndPointConstant.Challenge.ChallengesEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateChallenge(ChallengeCreateDto request)
@@ -47,6 +51,7 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        [Authorize(Roles = RoleConstants.Staff)]
         [HttpPatch(ApiEndPointConstant.Challenge.ChallengeEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateChallengeInfo(int id, ChallengeInfo request)
@@ -56,6 +61,7 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+        [Authorize(Roles = RoleConstants.Staff)]
         [HttpDelete(ApiEndPointConstant.Challenge.ChallengeEndPoint)]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteChallenge(int id)
