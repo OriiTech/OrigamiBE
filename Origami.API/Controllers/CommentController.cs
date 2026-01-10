@@ -33,6 +33,13 @@ namespace Origami.API.Controllers
             var response = await _commentService.GetCommentById(id);
             return Ok(response);
         }
+        [HttpGet(ApiEndPointConstant.Guide.GuideEndPoint + "/comments")]
+        public async Task<IActionResult> GetComments([FromRoute] int id)
+        {
+            var response = await _commentService.GetCommentsByGuideId(id);
+            return Ok(response);
+        }
+
 
 
         [HttpGet(ApiEndPointConstant.Comment.CommentsEndPoint)]

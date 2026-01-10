@@ -11,5 +11,7 @@ namespace Origami.API.Services.Interfaces
         Task<bool> UpdateComment(int id, CommentUpdateInfo request);
         Task<GetCommentResponse> GetCommentById(int id);
         Task<IPaginate<GetCommentResponse>> ViewAllComment(CommentFilter filter, PagingModel pagingModel);
+        Task<int> CountComment(CommentFilter filter);
+        Task<GuideCommentsResponse> GetCommentsByGuideId(int guideId);
     }
 }

@@ -25,13 +25,13 @@ namespace Origami.DataTier.Repository.Interfaces
         Task<ICollection<T>> GetListAsync(
             Expression<Func<T, bool>> predicate = null,
             Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
-            Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null);
+            Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null, bool asNoTracking = true);
 
         Task<ICollection<TResult>> GetListAsync<TResult>(
             Expression<Func<T, TResult>> selector,
             Expression<Func<T, bool>> predicate = null,
             Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
-            Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null);
+            Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null, bool asNoTracking = true);
 
         Task<IPaginate<T>> GetPagingListAsync(
             Expression<Func<T, bool>> predicate = null,
@@ -71,5 +71,8 @@ namespace Origami.DataTier.Repository.Interfaces
         void Delete(T entity);
         void DeleteRange(IEnumerable<T> entities);
         Task<IEnumerable<T>> GetAllAsync();
+        Task<List<T>> GetAllAsync(Expression<Func<T, bool>>? predicate = null, Func<IQueryable<T>, IQueryable<T>>? include = null);
+        Task<List<TResult>> GetAllAsync<TResult>(Expression<Func<T, TResult>> selector, Expression<Func<T, bool>>? predicate = null);
+        void Attach(T entity);
     }
 }

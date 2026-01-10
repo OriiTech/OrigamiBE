@@ -363,3 +363,4 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/Origami.API/Extensions/origami-93877-firebase-adminsdk-fbsvc-c41c68e01f.json

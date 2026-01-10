@@ -82,6 +82,9 @@ namespace Origami.BusinessTier.Constants
         {
             public const string GuidesEndPoint = ApiEndpoint + "/guides";
             public const string GuideEndPoint = GuidesEndPoint + "/{id}";
+            public const string GuideCardsEndPoint = GuidesEndPoint + "/cards";
+            public const string GuideDetailEndPoint = GuideEndPoint + "/detail";
+            public const string GuideViewEndPoint = GuideEndPoint + "/view";
         }
 
         //Auth
@@ -106,6 +109,7 @@ namespace Origami.BusinessTier.Constants
         {
             public const string ChallengesEndPoint = ApiEndpoint + "/challenges";
             public const string ChallengeEndPoint = ChallengesEndPoint + "/{id}";
+            public const string ChallengeListEndPoint = ChallengesEndPoint + "/list";
         }
         //Favorite       
         public static class Favorite
@@ -146,6 +150,9 @@ namespace Origami.BusinessTier.Constants
         {
             public const string SubmissionsEndPoint = ApiEndpoint + "/submissions";
             public const string SubmissionEndPoint = SubmissionsEndPoint + "/{id}";
+            public const string SubmissionFeed = "challenges/{challengeId}/submissions/feed";
+            public const string SaveSubmission = "submissions/save";
+            public const string SubmitSubmission = "submissions/submit";
         }
 
         //Leaderboard

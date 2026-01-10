@@ -63,6 +63,8 @@ namespace Origami.API.Extensions
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<IBadgeService, BadgeService>();
             services.AddScoped<IUserBadgeService, UserBadgeService>();
+            services.AddScoped<IUploadService, UploadService>();
+            services.AddScoped<IEmailService, EmailService>();
 
 
             return services;

@@ -35,9 +35,15 @@ public partial class User
 
     public virtual ICollection<GuideAccess> GuideAccesses { get; set; } = new List<GuideAccess>();
 
+    public virtual ICollection<GuideRating> GuideRatings { get; set; } = new List<GuideRating>();
+
+    public virtual ICollection<GuideView> GuideViews { get; set; } = new List<GuideView>();
+
     public virtual ICollection<Guide> Guides { get; set; } = new List<Guide>();
 
     public virtual ICollection<Leaderboard> Leaderboards { get; set; } = new List<Leaderboard>();
+
+    public virtual ICollection<LectureProgress> LectureProgresses { get; set; } = new List<LectureProgress>();
 
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
@@ -51,9 +57,17 @@ public partial class User
 
     public virtual ICollection<Revenue> Revenues { get; set; } = new List<Revenue>();
 
+    public virtual ICollection<ReviewResponse> ReviewResponses { get; set; } = new List<ReviewResponse>();
+
     public virtual Role? Role { get; set; }
 
     public virtual ICollection<Score> Scores { get; set; } = new List<Score>();
+
+    public virtual ICollection<SubmissionComment> SubmissionComments { get; set; } = new List<SubmissionComment>();
+
+    public virtual ICollection<SubmissionLike> SubmissionLikes { get; set; } = new List<SubmissionLike>();
+
+    public virtual ICollection<SubmissionView> SubmissionViews { get; set; } = new List<SubmissionView>();
 
     public virtual ICollection<Submission> Submissions { get; set; } = new List<Submission>();
 
@@ -63,7 +77,11 @@ public partial class User
 
     public virtual ICollection<UserBadge> UserBadges { get; set; } = new List<UserBadge>();
 
+    public virtual UserProfile? UserProfile { get; set; }
+
     public virtual ICollection<Vote> Votes { get; set; } = new List<Vote>();
 
     public virtual ICollection<Wallet> Wallets { get; set; } = new List<Wallet>();
+
+    public virtual ICollection<Challenge> ChallengesNavigation { get; set; } = new List<Challenge>();
 }
