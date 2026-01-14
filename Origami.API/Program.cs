@@ -2,6 +2,7 @@
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Origami.API.Extensions;
@@ -19,6 +20,20 @@ if (builder.Environment.IsProduction())
         source.ReloadOnChange = false;
     }
 }
+
+// Cấu hình Forwarded Headers để middleware (đặc biệt là Google OAuth)
+// thấy đúng scheme/host khi chạy sau reverse proxy (Render)
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost;
+
+    // Cho phép nhận header từ mọi proxy (Render đứng trước)
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // Lấy port từ biến môi trường của Render
 var port = Environment.GetEnvironmentVariable("PORT");
@@ -115,6 +130,9 @@ if (swaggerEnabled)
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// Phải đặt ngay đầu pipeline để các middleware phía sau
+// (Authentication, Google OAuth, Url.ActionLink, ...) thấy đúng scheme/host
 app.UseForwardedHeaders();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
