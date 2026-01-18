@@ -91,6 +91,7 @@ namespace Origami.BusinessTier.Constants
         public static class Auth
         {
             public const string GoogleLogin = ApiEndpoint + "/auth/google-login";
+            public const string GoogleLoginInitiate = ApiEndpoint + "/auth/google-login-initiate";
             public const string GoogleCallback = ApiEndpoint + "/auth/google-callback";
             public const string Register = ApiEndpoint + "/auth/register";
             public const string Login = ApiEndpoint + "/auth/login";

@@ -48,42 +48,44 @@ namespace Origami.API.Controllers
         [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
         public IActionResult GoogleLogin([FromQuery] string? returnUrl = null)
         {
-            // Khi gọi từ Swagger hoặc API client, trả về link trực tiếp đến Google OAuth
+            // Khi gọi từ Swagger hoặc API client, trả về link đến endpoint initiate để middleware quản lý state
             if (Request.Headers["Accept"].Any(h => h.Contains("application/json", StringComparison.OrdinalIgnoreCase)) ||
                 !Request.Headers["Accept"].Any())
             {
                 var (scheme, host) = ResolveRequestContext();
-                var clientId = _configuration["Authentication:Google:ClientId"];
-                var callbackPath = _configuration["Authentication:Google:CallbackPath"] ?? "/signin-google";
                 
-                if (string.IsNullOrEmpty(clientId))
+                // Build URL đến endpoint initiate với returnUrl trong query string
+                // Endpoint này sẽ sử dụng Challenge() để middleware tự động quản lý state
+                var initiateUrl = $"{scheme}://{host}{ApiEndPointConstant.Auth.GoogleLoginInitiate}";
+                if (!string.IsNullOrEmpty(returnUrl))
                 {
-                    return BadRequest(new { error = "Google ClientId is not configured" });
+                    initiateUrl += $"?returnUrl={Uri.EscapeDataString(returnUrl)}";
                 }
-
-                // Build redirect URI tuyệt đối
-                var redirectUri = $"{scheme}://{host}{callbackPath}";
-                
-                // Build Google OAuth URL
-                var state = !string.IsNullOrEmpty(returnUrl) ? returnUrl : "/";
-                var googleAuthUrl = $"https://accounts.google.com/o/oauth2/v2/auth" +
-                    $"?client_id={Uri.EscapeDataString(clientId)}" +
-                    $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
-                    $"&response_type=code" +
-                    $"&scope=openid profile email" +
-                    $"&state={Uri.EscapeDataString(state)}" +
-                    $"&access_type=offline" +
-                    $"&prompt=consent";
 
                 return Ok(new
                 {
-                    authorizationUrl = googleAuthUrl,
+                    authorizationUrl = initiateUrl,
                     message = "Open this URL in your browser to continue Google authentication.",
-                    redirectUri = redirectUri
+                    redirectUri = $"{scheme}://{host}{ApiEndPointConstant.Auth.GoogleCallback}"
                 });
             }
 
             // Khi truy cập trực tiếp từ browser, thực hiện Challenge
+            var finalReturnUrl = returnUrl ?? "/";
+            var callbackUrl = BuildCallbackUrl(finalReturnUrl);
+            var properties = new AuthenticationProperties
+            {
+                RedirectUri = callbackUrl
+            };
+
+            return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+        }
+
+        [HttpGet(ApiEndPointConstant.Auth.GoogleLoginInitiate)]
+        public IActionResult GoogleLoginInitiate([FromQuery] string? returnUrl = null)
+        {
+            // Endpoint này được gọi từ mobile app để initiate OAuth flow
+            // Sử dụng Challenge() để middleware tự động quản lý state trong cookie
             var finalReturnUrl = returnUrl ?? "/";
             var callbackUrl = BuildCallbackUrl(finalReturnUrl);
             var properties = new AuthenticationProperties
