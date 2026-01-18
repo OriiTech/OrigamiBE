@@ -97,32 +97,57 @@ namespace Origami.API.Controllers
         [HttpGet(ApiEndPointConstant.Auth.GoogleCallback)]
         public async Task<IActionResult> GoogleCallback([FromQuery] string returnUrl = "/")
         {
-            var authenticateResult = await HttpContext.AuthenticateAsync("External");
-            if (!authenticateResult.Succeeded || authenticateResult.Principal == null)
+            try
             {
+                _logger.LogInformation("Google callback received. ReturnUrl: {ReturnUrl}", returnUrl);
+
+                var authenticateResult = await HttpContext.AuthenticateAsync("External");
+                if (!authenticateResult.Succeeded || authenticateResult.Principal == null)
+                {
+                    _logger.LogWarning("Google authentication failed. Succeeded: {Succeeded}, Principal: {Principal}", 
+                        authenticateResult.Succeeded, authenticateResult.Principal == null ? "null" : "not null");
+                    await HttpContext.SignOutAsync("External");
+                    return Redirect($"{returnUrl}?error=ExternalLoginFailed");
+                }
+
+                var email = authenticateResult.Principal.FindFirst(ClaimTypes.Email)?.Value;
+                var name = authenticateResult.Principal.FindFirst(ClaimTypes.Name)?.Value;
+
+                _logger.LogInformation("Google authentication succeeded. Email: {Email}, Name: {Name}", email, name);
+
                 await HttpContext.SignOutAsync("External");
-                return Redirect($"{returnUrl}?error=ExternalLoginFailed");
+
+                if (string.IsNullOrEmpty(email))
+                {
+                    _logger.LogWarning("Email not found in Google claims");
+                    return Redirect($"{returnUrl}?error=EmailRequired");
+                }
+
+                _logger.LogInformation("Calling LoginWithGoogle for email: {Email}", email);
+                var authResponse = await _authService.LoginWithGoogle(email, name ?? email);
+                _logger.LogInformation("LoginWithGoogle succeeded for email: {Email}", email);
+
+                var query = new Dictionary<string, string?>
+                {
+                    ["accessToken"] = authResponse.AccessToken,
+                    ["refreshToken"] = authResponse.RefreshToken,
+                    ["expiresIn"] = authResponse.AccessTokenExpiresAt?.ToString("o")
+                };
+
+                var redirectUrl = QueryHelpers.AddQueryString(returnUrl, query);
+                _logger.LogInformation("Redirecting to: {RedirectUrl}", redirectUrl);
+                return Redirect(redirectUrl);
             }
-
-            var email = authenticateResult.Principal.FindFirst(ClaimTypes.Email)?.Value;
-            var name = authenticateResult.Principal.FindFirst(ClaimTypes.Name)?.Value;
-
-            await HttpContext.SignOutAsync("External");
-
-            if (string.IsNullOrEmpty(email))
-                return Redirect($"{returnUrl}?error=EmailRequired");
-
-            var authResponse = await _authService.LoginWithGoogle(email, name ?? email);
-
-            var query = new Dictionary<string, string?>
+            catch (BadHttpRequestException ex)
             {
-                ["accessToken"] = authResponse.AccessToken,
-                ["refreshToken"] = authResponse.RefreshToken,
-                ["expiresIn"] = authResponse.AccessTokenExpiresAt?.ToString("o")
-            };
-
-            var redirectUrl = QueryHelpers.AddQueryString(returnUrl, query);
-            return Redirect(redirectUrl);
+                _logger.LogError(ex, "Bad request in Google callback. Message: {Message}", ex.Message);
+                return Redirect($"{returnUrl}?error={Uri.EscapeDataString(ex.Message)}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error was encountered while handling the remote login.");
+                return Redirect($"{returnUrl}?error=InternalServerError");
+            }
         }
 
         [HttpPost(ApiEndPointConstant.Auth.Refresh)]
