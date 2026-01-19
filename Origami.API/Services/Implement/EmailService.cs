@@ -70,49 +70,43 @@ namespace Origami.API.Services.Implement
                 };
                 message.Body = bodyBuilder.ToMessageBody();
 
-                using var client = new SmtpClient();
-                
-                // Set timeout to 60 seconds for SMTP operations (longer for Render network)
-                client.Timeout = 60000; // 60 seconds in milliseconds
-                
-                // Connect with timeout and retry logic
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
-                
-                try
+                // Thử lần lượt hai cấu hình: 587 STARTTLS, sau đó 465 SSL nếu 587 thất bại
+                var attempts = new List<(int Port, SecureSocketOptions Options)>
                 {
-                    await client.ConnectAsync(smtpServer, smtpPort, enableSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None, cts.Token);
-                }
-                catch (Exception connectEx)
-                {
-                    _logger.LogError(connectEx, $"Failed to connect to SMTP server {smtpServer}:{smtpPort}");
-                    throw new InvalidOperationException($"Không thể kết nối đến SMTP server. Vui lòng thử lại sau.", connectEx);
-                }
-                
-                try
-                {
-                    await client.AuthenticateAsync(smtpUsername, smtpPassword, cts.Token);
-                }
-                catch (Exception authEx)
-                {
-                    _logger.LogError(authEx, $"Failed to authenticate with SMTP server");
-                    await client.DisconnectAsync(true, CancellationToken.None);
-                    throw new InvalidOperationException($"Xác thực SMTP thất bại. Vui lòng kiểm tra lại thông tin đăng nhập.", authEx);
-                }
-                
-                try
-                {
-                    await client.SendAsync(message, cts.Token);
-                }
-                catch (Exception sendEx)
-                {
-                    _logger.LogError(sendEx, $"Failed to send email");
-                    await client.DisconnectAsync(true, CancellationToken.None);
-                    throw new InvalidOperationException($"Không thể gửi email. Vui lòng thử lại sau.", sendEx);
-                }
-                
-                await client.DisconnectAsync(true, CancellationToken.None);
+                    (smtpPort, enableSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None),
+                    (465, SecureSocketOptions.SslOnConnect)
+                };
 
-                _logger.LogInformation($"Email sent successfully to {toEmail}");
+                Exception? lastEx = null;
+
+                foreach (var attempt in attempts)
+                {
+                    using var client = new SmtpClient();
+                    client.Timeout = 60000; // 60s
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+                    try
+                    {
+                        _logger.LogInformation($"[Email] Connecting to {smtpServer}:{attempt.Port} ({attempt.Options})");
+                        await client.ConnectAsync(smtpServer, attempt.Port, attempt.Options, cts.Token);
+
+                        await client.AuthenticateAsync(smtpUsername, smtpPassword, cts.Token);
+
+                        await client.SendAsync(message, cts.Token);
+                        await client.DisconnectAsync(true, CancellationToken.None);
+
+                        _logger.LogInformation($"Email sent successfully to {toEmail} via port {attempt.Port}");
+                        return;
+                    }
+                    catch (Exception exAttempt)
+                    {
+                        lastEx = exAttempt;
+                        _logger.LogError(exAttempt, $"[Email] Failed on {smtpServer}:{attempt.Port} ({attempt.Options})");
+                        // Thử cấu hình tiếp theo
+                    }
+                }
+
+                // Nếu tất cả đều thất bại, ném lỗi cuối cùng
+                throw new InvalidOperationException("Không thể kết nối đến SMTP server (đã thử 587 và 465). Vui lòng thử lại sau.", lastEx);
             }
             catch (Exception ex)
             {
