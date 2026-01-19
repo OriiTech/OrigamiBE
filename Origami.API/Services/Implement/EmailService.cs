@@ -141,6 +141,57 @@ namespace Origami.API.Services.Implement
 
             return "Email sent successfully";
         }
+
+        public async Task<string> SendFeedbackEmailAsync(FeedbackEmailRequest request)
+        {
+            // Lấy User từ DB thông qua Email (nếu có)
+            var user = await _unitOfWork.GetRepository<User>()
+                .GetFirstOrDefaultAsync(
+                    predicate: x => x.Email.ToLower() == request.Email.ToLower(),
+                    include: q => q.Include(u => u.UserProfile),
+                    asNoTracking: true
+                );
+
+            // Lấy UserName: ưu tiên DisplayName từ UserProfile, nếu không có thì dùng Username
+            var userName = user?.UserProfile?.DisplayName 
+                ?? user?.Username 
+                ?? request.Email.Split('@')[0]; // Fallback nếu không tìm thấy user
+
+            // Tạo HTML body cho feedback email
+            var htmlBody = $@"
+                <html>
+                <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+                    <h2 style='color: #1d9bf0;'>📧 Feedback từ Origami Mobile App</h2>
+                    <div style='background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;'>
+                        <p><strong>Người gửi:</strong> {userName} ({request.Email})</p>
+                        <p><strong>Thời gian:</strong> {DateTime.Now:dd/MM/yyyy HH:mm:ss}</p>
+                    </div>
+                    <div style='margin: 20px 0;'>
+                        <h3 style='color: #333;'>Tiêu đề:</h3>
+                        <p style='background-color: #fff; padding: 10px; border-left: 3px solid #1d9bf0;'>{request.Subject}</p>
+                    </div>
+                    <div style='margin: 20px 0;'>
+                        <h3 style='color: #333;'>Nội dung:</h3>
+                        <div style='background-color: #fff; padding: 15px; border-left: 3px solid #1d9bf0; white-space: pre-wrap;'>{request.Content}</div>
+                    </div>
+                    <hr style='border: none; border-top: 1px solid #ddd; margin: 30px 0;' />
+                    <p style='color: #666; font-size: 12px;'>Email này được gửi tự động từ Origami Mobile App.</p>
+                </body>
+                </html>";
+
+            // Gửi email đến địa chỉ feedback
+            var feedbackEmail = _configuration["Authentication:EmailSettings:FromEmail"] ?? "origamihub678@gmail.com";
+            var subject = $"📧 Feedback: {request.Subject}";
+            
+            await SendEmailAsync(
+                feedbackEmail,
+                "Origami Support",
+                subject,
+                htmlBody
+            );
+
+            return "Feedback sent successfully";
+        }
     }
 }
 

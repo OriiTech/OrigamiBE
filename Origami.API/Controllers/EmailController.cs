@@ -31,6 +31,17 @@ namespace Origami.API.Controllers
             var response = await _emailService.SendTestEmailAsync(request);
             return Ok(response);
         }
+
+        /// Gửi feedback email từ mobile app
+        /// <param name="request">Thông tin feedback</param>
+        /// <returns>Kết quả gửi email</returns>
+        [HttpPost("/api/v1/emails/feedback")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        public async Task<IActionResult> SendFeedback([FromBody] FeedbackEmailRequest request)
+        {
+            var response = await _emailService.SendFeedbackEmailAsync(request);
+            return Ok(response);
+        }
     }
 }
 

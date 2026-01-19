@@ -8,6 +8,7 @@ namespace Origami.API.Services.Interfaces
         Task SendEmailAsync(string toEmail, string? toName, string subject, string htmlBody);
         Task<string> RenderEmailTemplateAsync(string templateName, Dictionary<string, object> model);
         Task<string> SendTestEmailAsync(TestEmailRequest request);
+        Task<string> SendFeedbackEmailAsync(FeedbackEmailRequest request);
     }
 }
 
