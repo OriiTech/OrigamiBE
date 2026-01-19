@@ -8,6 +8,7 @@ using Origami.BusinessTier.Payload.Email;
 using Origami.DataTier.Models;
 using Origami.DataTier.Repository.Interfaces;
 using System.Text;
+using System.Threading;
 
 namespace Origami.API.Services.Implement
 {
@@ -70,10 +71,46 @@ namespace Origami.API.Services.Implement
                 message.Body = bodyBuilder.ToMessageBody();
 
                 using var client = new SmtpClient();
-                await client.ConnectAsync(smtpServer, smtpPort, enableSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None);
-                await client.AuthenticateAsync(smtpUsername, smtpPassword);
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
+                
+                // Set timeout to 60 seconds for SMTP operations (longer for Render network)
+                client.Timeout = 60000; // 60 seconds in milliseconds
+                
+                // Connect with timeout and retry logic
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+                
+                try
+                {
+                    await client.ConnectAsync(smtpServer, smtpPort, enableSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None, cts.Token);
+                }
+                catch (Exception connectEx)
+                {
+                    _logger.LogError(connectEx, $"Failed to connect to SMTP server {smtpServer}:{smtpPort}");
+                    throw new InvalidOperationException($"Không thể kết nối đến SMTP server. Vui lòng thử lại sau.", connectEx);
+                }
+                
+                try
+                {
+                    await client.AuthenticateAsync(smtpUsername, smtpPassword, cts.Token);
+                }
+                catch (Exception authEx)
+                {
+                    _logger.LogError(authEx, $"Failed to authenticate with SMTP server");
+                    await client.DisconnectAsync(true, CancellationToken.None);
+                    throw new InvalidOperationException($"Xác thực SMTP thất bại. Vui lòng kiểm tra lại thông tin đăng nhập.", authEx);
+                }
+                
+                try
+                {
+                    await client.SendAsync(message, cts.Token);
+                }
+                catch (Exception sendEx)
+                {
+                    _logger.LogError(sendEx, $"Failed to send email");
+                    await client.DisconnectAsync(true, CancellationToken.None);
+                    throw new InvalidOperationException($"Không thể gửi email. Vui lòng thử lại sau.", sendEx);
+                }
+                
+                await client.DisconnectAsync(true, CancellationToken.None);
 
                 _logger.LogInformation($"Email sent successfully to {toEmail}");
             }
