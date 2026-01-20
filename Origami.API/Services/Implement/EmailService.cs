@@ -112,11 +112,13 @@ namespace Origami.API.Services.Implement
             string subject,
             string htmlBody)
         {
-            var fromEmail = _configuration["SendGrid:FromEmail"]
+            var fromEmail = Environment.GetEnvironmentVariable("SENDGRID_FROM_EMAIL")
+                ?? _configuration["SendGrid:FromEmail"]
                 ?? _configuration["Authentication:EmailSettings:FromEmail"]
-                ?? throw new InvalidOperationException("SendGrid:FromEmail is not configured");
+                ?? throw new InvalidOperationException("SENDGRID_FROM_EMAIL is not configured");
 
-            var fromName = _configuration["SendGrid:FromName"]
+            var fromName = Environment.GetEnvironmentVariable("SENDGRID_FROM_NAME")
+                ?? _configuration["SendGrid:FromName"]
                 ?? _configuration["Authentication:EmailSettings:FromName"]
                 ?? "Origami Tech Sharing";
 
