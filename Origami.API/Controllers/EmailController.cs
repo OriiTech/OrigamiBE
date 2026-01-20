@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
@@ -32,10 +33,13 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
+        /// <summary>
         /// Gửi feedback email từ mobile app
+        /// </summary>
         /// <param name="request">Thông tin feedback</param>
         /// <returns>Kết quả gửi email</returns>
         [HttpPost("/api/v1/emails/feedback")]
+        [Authorize] // Yêu cầu user đã đăng nhập
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<IActionResult> SendFeedback([FromBody] FeedbackEmailRequest request)
         {

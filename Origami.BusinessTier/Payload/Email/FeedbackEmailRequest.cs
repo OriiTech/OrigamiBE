@@ -4,9 +4,10 @@ namespace Origami.BusinessTier.Payload.Email
 {
     public class FeedbackEmailRequest
     {
-        [Required(ErrorMessage = "Email is required")]
+        // Email không còn cần thiết vì sẽ lấy từ JWT token của user đang đăng nhập
+        // Giữ lại để backward compatibility, nhưng không required
         [EmailAddress(ErrorMessage = "Invalid email format")]
-        public string Email { get; set; } = null!;
+        public string? Email { get; set; }
 
         [Required(ErrorMessage = "Subject is required")]
         [StringLength(200, ErrorMessage = "Subject must not exceed 200 characters")]
