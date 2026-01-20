@@ -7,6 +7,8 @@ using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Payload.Email;
 using Origami.DataTier.Models;
 using Origami.DataTier.Repository.Interfaces;
+using SendGrid;
+using SendGrid.Helpers.Mail;
 using System.Text;
 using System.Threading;
 
@@ -46,6 +48,22 @@ namespace Origami.API.Services.Implement
 
         public async Task SendEmailAsync(string toEmail, string? toName, string subject, string htmlBody)
         {
+            // Ưu tiên dùng SendGrid nếu có API key trong cấu hình / environment
+            var sendGridApiKey = _configuration["SendGrid:ApiKey"] 
+                ?? Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
+
+            if (!string.IsNullOrWhiteSpace(sendGridApiKey))
+            {
+                await SendEmailWithSendGridAsync(sendGridApiKey, toEmail, toName, subject, htmlBody);
+                return;
+            }
+
+            // Fallback: dùng SMTP cũ (hữu ích cho môi trường local)
+            await SendEmailWithSmtpAsync(toEmail, toName, subject, htmlBody);
+        }
+
+        private async Task SendEmailWithSmtpAsync(string toEmail, string? toName, string subject, string htmlBody)
+        {
             try
             {
                 var emailSettings = _configuration.GetSection("Authentication:EmailSettings");
@@ -55,7 +73,7 @@ namespace Origami.API.Services.Implement
                 var smtpPassword = emailSettings["SmtpPassword"] ?? throw new InvalidOperationException("EmailSettings:SmtpPassword is not configured");
                 var fromName = emailSettings["FromName"] ?? "Origami Tech Sharing";
                 var enableSsl = emailSettings.GetValue<bool>("EnableSsl", true);
-                
+
                 // Gmail yêu cầu SmtpUsername phải là email đầy đủ, không phải tên
                 var smtpUsername = fromEmail;
 
@@ -70,49 +88,61 @@ namespace Origami.API.Services.Implement
                 };
                 message.Body = bodyBuilder.ToMessageBody();
 
-                // Thử lần lượt hai cấu hình: 587 STARTTLS, sau đó 465 SSL nếu 587 thất bại
-                var attempts = new List<(int Port, SecureSocketOptions Options)>
-                {
-                    (smtpPort, enableSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None),
-                    (465, SecureSocketOptions.SslOnConnect)
-                };
+                using var client = new SmtpClient();
+                client.Timeout = 60000; // 60s
 
-                Exception? lastEx = null;
+                await client.ConnectAsync(smtpServer, smtpPort, enableSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None);
+                await client.AuthenticateAsync(smtpUsername, smtpPassword);
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
 
-                foreach (var attempt in attempts)
-                {
-                    using var client = new SmtpClient();
-                    client.Timeout = 60000; // 60s
-                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
-                    try
-                    {
-                        _logger.LogInformation($"[Email] Connecting to {smtpServer}:{attempt.Port} ({attempt.Options})");
-                        await client.ConnectAsync(smtpServer, attempt.Port, attempt.Options, cts.Token);
-
-                        await client.AuthenticateAsync(smtpUsername, smtpPassword, cts.Token);
-
-                        await client.SendAsync(message, cts.Token);
-                        await client.DisconnectAsync(true, CancellationToken.None);
-
-                        _logger.LogInformation($"Email sent successfully to {toEmail} via port {attempt.Port}");
-                        return;
-                    }
-                    catch (Exception exAttempt)
-                    {
-                        lastEx = exAttempt;
-                        _logger.LogError(exAttempt, $"[Email] Failed on {smtpServer}:{attempt.Port} ({attempt.Options})");
-                        // Thử cấu hình tiếp theo
-                    }
-                }
-
-                // Nếu tất cả đều thất bại, ném lỗi cuối cùng
-                throw new InvalidOperationException("Không thể kết nối đến SMTP server (đã thử 587 và 465). Vui lòng thử lại sau.", lastEx);
+                _logger.LogInformation($"[SMTP] Email sent successfully to {toEmail}");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Failed to send email to {toEmail}");
+                _logger.LogError(ex, $"[SMTP] Failed to send email to {toEmail}");
                 throw;
             }
+        }
+
+        private async Task SendEmailWithSendGridAsync(
+            string apiKey,
+            string toEmail,
+            string? toName,
+            string subject,
+            string htmlBody)
+        {
+            var fromEmail = _configuration["SendGrid:FromEmail"]
+                ?? _configuration["Authentication:EmailSettings:FromEmail"]
+                ?? throw new InvalidOperationException("SendGrid:FromEmail is not configured");
+
+            var fromName = _configuration["SendGrid:FromName"]
+                ?? _configuration["Authentication:EmailSettings:FromName"]
+                ?? "Origami Tech Sharing";
+
+            var client = new SendGridClient(apiKey);
+
+            var from = new EmailAddress(fromEmail, fromName);
+            var to = new EmailAddress(toEmail, toName ?? toEmail);
+
+            var msg = MailHelper.CreateSingleEmail(
+                from,
+                to,
+                subject,
+                plainTextContent: null,
+                htmlContent: htmlBody);
+
+            var response = await client.SendEmailAsync(msg);
+
+            if ((int)response.StatusCode >= 200 && (int)response.StatusCode < 300)
+            {
+                _logger.LogInformation($"[SendGrid] Email sent successfully to {toEmail} with status {response.StatusCode}");
+                return;
+            }
+
+            var body = await response.Body.ReadAsStringAsync();
+            _logger.LogError("[SendGrid] Failed to send email. Status: {StatusCode}, Body: {Body}", response.StatusCode, body);
+            throw new InvalidOperationException($"SendGrid gửi email thất bại với mã trạng thái {(int)response.StatusCode}.");
         }
 
         public async Task<string> RenderEmailTemplateAsync(string templateName, Dictionary<string, object> model)
