@@ -29,12 +29,14 @@ namespace Origami.API.Controllers
 
         [Authorize(Roles = RoleConstants.User)]
         [HttpPut(ApiEndPointConstant.User.MyProfileEndPoint)]
-        [Consumes("multipart/form-data", "application/json")]
+        [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(UserProfileResponse), StatusCodes.Status200OK)]
-        public async Task<IActionResult> UpdateMyProfile([FromForm] UpdateUserProfileRequest? formRequest, [FromBody] UpdateUserProfileRequest? jsonRequest)
+        public async Task<IActionResult> UpdateMyProfile([FromForm] UpdateUserProfileRequest request)
         {
-            // Ưu tiên formRequest (multipart/form-data) nếu có, nếu không thì dùng jsonRequest
-            var request = formRequest ?? jsonRequest ?? new UpdateUserProfileRequest();
+            if (request == null)
+            {
+                return BadRequest(new { message = "Request body is required" });
+            }
             
             var response = await _userProfileService.UpdateMyProfileAsync(request);
             return Ok(response);
