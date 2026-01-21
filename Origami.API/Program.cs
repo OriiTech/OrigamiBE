@@ -102,6 +102,7 @@ builder.Services.AddControllers().AddJsonOptions(x =>
 {
     x.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     x.JsonSerializerOptions.Converters.Add(new TimeOnlyJsonConverter());
+    x.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping; // Hỗ trợ UTF-8 đầy đủ cho tiếng Việt
 });
 builder.Services.AddDatabase(builder);
 builder.Services.AddUnitOfWork();

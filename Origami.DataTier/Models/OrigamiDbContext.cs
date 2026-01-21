@@ -1757,13 +1757,16 @@ public partial class OrigamiDbContext : DbContext
                     .HasMaxLength(255)
                     .IsUnicode(false)
                     .HasColumnName("avatar_url");
-                entity.Property(e => e.Bio).HasColumnName("bio");
+                entity.Property(e => e.Bio)
+                    .HasColumnType("nvarchar(max)")
+                    .HasColumnName("bio");
                 entity.Property(e => e.CreatedAt)
                     .HasDefaultValueSql("(getdate())")
                     .HasColumnType("datetime")
                     .HasColumnName("created_at");
                 entity.Property(e => e.DisplayName)
                     .HasMaxLength(255)
+                    .HasColumnType("nvarchar(255)") // Hỗ trợ Unicode cho tiếng Việt
                     .HasColumnName("display_name");
 
                 entity.HasOne(d => d.User).WithOne(p => p.UserProfile)
