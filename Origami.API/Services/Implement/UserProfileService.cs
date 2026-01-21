@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Payload.UserProfile;
 using Origami.DataTier.Models;
 using Origami.DataTier.Repository.Interfaces;
