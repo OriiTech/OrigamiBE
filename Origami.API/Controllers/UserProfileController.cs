@@ -18,9 +18,6 @@ namespace Origami.API.Controllers
             _userProfileService = userProfileService;
         }
 
-        /// <summary>
-        /// Lấy profile của chính user đang đăng nhập
-        /// </summary>
         [Authorize(Roles = RoleConstants.User)]
         [HttpGet(ApiEndPointConstant.User.MyProfileEndPoint)]
         [ProducesResponseType(typeof(UserProfileResponse), StatusCodes.Status200OK)]
@@ -30,14 +27,15 @@ namespace Origami.API.Controllers
             return Ok(response);
         }
 
-        /// <summary>
-        /// Cập nhật profile (display_name, avatar_url, bio) cho user hiện tại
-        /// </summary>
         [Authorize(Roles = RoleConstants.User)]
         [HttpPut(ApiEndPointConstant.User.MyProfileEndPoint)]
+        [Consumes("multipart/form-data", "application/json")]
         [ProducesResponseType(typeof(UserProfileResponse), StatusCodes.Status200OK)]
-        public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateUserProfileRequest request)
+        public async Task<IActionResult> UpdateMyProfile([FromForm] UpdateUserProfileRequest? formRequest, [FromBody] UpdateUserProfileRequest? jsonRequest)
         {
+            // Ưu tiên formRequest (multipart/form-data) nếu có, nếu không thì dùng jsonRequest
+            var request = formRequest ?? jsonRequest ?? new UpdateUserProfileRequest();
+            
             var response = await _userProfileService.UpdateMyProfileAsync(request);
             return Ok(response);
         }

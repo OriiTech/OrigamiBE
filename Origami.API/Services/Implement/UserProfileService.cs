@@ -4,18 +4,24 @@ using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Payload.UserProfile;
 using Origami.DataTier.Models;
 using Origami.DataTier.Repository.Interfaces;
+using System.IO;
+using System.Linq;
 
 namespace Origami.API.Services.Implement
 {
     public class UserProfileService : BaseService<UserProfileService>, IUserProfileService
     {
+        private readonly IUploadService _uploadService;
+
         public UserProfileService(
             IUnitOfWork<OrigamiDbContext> unitOfWork,
             ILogger<UserProfileService> logger,
             IMapper mapper,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IUploadService uploadService)
             : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
+            _uploadService = uploadService;
         }
 
         public async Task<UserProfileResponse> GetMyProfileAsync()
@@ -72,9 +78,29 @@ namespace Origami.API.Services.Implement
                 profile.DisplayName = request.DisplayName.Trim();
             }
 
-            if (request.AvatarUrl != null)
+            // Upload avatar file lên Firebase nếu có
+            if (request.AvatarFile != null && request.AvatarFile.Length > 0)
             {
-                profile.AvatarUrl = request.AvatarUrl.Trim();
+                // Validate file type (chỉ cho phép image)
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+                var fileExtension = Path.GetExtension(request.AvatarFile.FileName).ToLowerInvariant();
+                
+                if (!allowedExtensions.Contains(fileExtension))
+                {
+                    throw new BadHttpRequestException("Only image files are allowed (jpg, jpeg, png, gif, webp)");
+                }
+
+                // Validate file size (max 5MB)
+                const long maxFileSize = 5 * 1024 * 1024; // 5MB
+                if (request.AvatarFile.Length > maxFileSize)
+                {
+                    throw new BadHttpRequestException("File size must be less than 5MB");
+                }
+
+                // Upload lên Firebase Storage
+                var avatarUrl = await _uploadService.UploadAsync(request.AvatarFile, "avatars");
+                profile.AvatarUrl = avatarUrl;
+                _logger.LogInformation($"Avatar uploaded for user {userId}: {avatarUrl}");
             }
 
             if (request.Bio != null)
