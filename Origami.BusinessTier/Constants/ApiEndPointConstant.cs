@@ -20,6 +20,7 @@ namespace Origami.BusinessTier.Constants
             public const string UsersEndPoint = ApiEndpoint + "/users";
             public const string UserEndPoint = UsersEndPoint + "/{id}";
             public const string UpdateUserRoleEndPoint = UserEndPoint + "/role";
+            public const string MyProfileEndPoint = ApiEndpoint + "/users/me/profile";
         }
 
         //Role

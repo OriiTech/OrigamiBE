@@ -38,6 +38,7 @@ namespace Origami.API.Extensions
         {
 
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IUserProfileService, UserProfileService>();
             services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<ICourseService, CourseService>();
             services.AddScoped<ILessonService, LessonService>();
