@@ -83,5 +83,21 @@ namespace Origami.API.Services.Implement
 
             return result;
         }
+
+        public async Task<List<GetUserBadgeResponse>> GetMyBadgesAsync()
+        {
+            int userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
+
+            var repo = _unitOfWork.GetRepository<UserBadge>();
+
+            var userBadges = await repo.GetListAsync(
+                predicate: x => x.UserId == userId,
+                include: q => q.Include(x => x.Badge),
+                orderBy: q => q.OrderByDescending(x => x.EarnedAt),
+                asNoTracking: true
+            );
+
+            return userBadges.Select(x => _mapper.Map<GetUserBadgeResponse>(x)).ToList();
+        }
     }
 }

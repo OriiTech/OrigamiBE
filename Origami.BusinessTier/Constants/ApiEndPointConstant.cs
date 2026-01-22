@@ -199,6 +199,7 @@ namespace Origami.BusinessTier.Constants
         {
             public const string UserBadgesEndPoint = ApiEndpoint + "/user-badges";
             public const string UserBadgeEndPoint = UserBadgesEndPoint + "/{id}";
+            public const string MyBadgesEndPoint = ApiEndpoint + "/users/me/badges";
         }
     }
 }

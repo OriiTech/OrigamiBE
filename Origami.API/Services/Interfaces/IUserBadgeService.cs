@@ -10,5 +10,6 @@ namespace Origami.API.Services.Interfaces
         Task<bool> GrantBadge(UserBadgeInfo request);
         Task<bool> RevokeBadge(int userId, int badgeId);
         Task<IPaginate<GetUserBadgeResponse>> ViewAllUserBadges(UserBadgeFilter filter, PagingModel pagingModel);
+        Task<List<GetUserBadgeResponse>> GetMyBadgesAsync();
     }
 }

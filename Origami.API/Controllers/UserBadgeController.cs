@@ -50,5 +50,13 @@ namespace Origami.API.Controllers
             var result = await _userBadgeService.ViewAllUserBadges(filter, paging);
             return Ok(result);
         }
+
+        [Microsoft.AspNetCore.Authorization.Authorize]
+        [HttpGet(ApiEndPointConstant.UserBadge.MyBadgesEndPoint)]
+        public async Task<IActionResult> GetMyBadges()
+        {
+            var result = await _userBadgeService.GetMyBadgesAsync();
+            return Ok(result);
+        }
     }
 }
