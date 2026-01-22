@@ -176,6 +176,24 @@ namespace Origami.API.Controllers
             return Ok(res);
         }
 
+        [HttpPost(ApiEndPointConstant.Auth.ChangePassword)]
+        [Microsoft.AspNetCore.Authorization.Authorize]
+        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            var res = await _authService.ChangePassword(request);
+            return Ok(res);
+        }
+
+        [HttpPost(ApiEndPointConstant.Auth.ChangeEmail)]
+        [Microsoft.AspNetCore.Authorization.Authorize]
+        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ChangeEmail([FromBody] ChangeEmailRequest request)
+        {
+            var res = await _authService.ChangeEmail(request);
+            return Ok(res);
+        }
+
         private (string Scheme, string Host) ResolveRequestContext()
         {
             var scheme = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? Request.Scheme;

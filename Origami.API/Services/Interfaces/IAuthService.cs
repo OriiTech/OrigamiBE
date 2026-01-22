@@ -10,5 +10,7 @@ namespace Origami.API.Services.Interfaces
         Task<AuthResponse> LoginWithGoogle(string email, string username);
         Task<AuthResponse> Refresh(RefreshTokenRequest request);
         Task<bool> Logout(string refreshToken);
+        Task<bool> ChangePassword(ChangePasswordRequest request);
+        Task<bool> ChangeEmail(ChangeEmailRequest request);
     }
 }

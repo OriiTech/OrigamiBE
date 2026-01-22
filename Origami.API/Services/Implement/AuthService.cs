@@ -354,5 +354,77 @@ namespace Origami.API.Services.Implement
                 }
             };
         }
+
+        public async Task<bool> ChangePassword(ChangePasswordRequest request)
+        {
+            int userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
+
+            var userRepo = _unitOfWork.GetRepository<User>();
+
+            var user = await userRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.UserId == userId,
+                asNoTracking: false
+            ) ?? throw new BadHttpRequestException("UserNotFound");
+
+            // Kiểm tra user có phải Google login không (không có password)
+            if (string.IsNullOrEmpty(user.Password))
+                throw new BadHttpRequestException("CannotChangePasswordForGoogleAccount");
+
+            // Verify current password
+            var currentPasswordHash = PasswordUtil.HashPassword(request.CurrentPassword);
+            if (!string.Equals(user.Password, currentPasswordHash, StringComparison.Ordinal))
+                throw new BadHttpRequestException("InvalidCurrentPassword");
+
+            // Hash new password
+            var newPasswordHash = PasswordUtil.HashPassword(request.NewPassword);
+            user.Password = newPasswordHash;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            var ok = await _unitOfWork.CommitAsync() > 0;
+            if (!ok)
+                throw new BadHttpRequestException("ChangePasswordFailed");
+
+            return true;
+        }
+
+        public async Task<bool> ChangeEmail(ChangeEmailRequest request)
+        {
+            int userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
+
+            var userRepo = _unitOfWork.GetRepository<User>();
+
+            var user = await userRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.UserId == userId,
+                asNoTracking: false
+            ) ?? throw new BadHttpRequestException("UserNotFound");
+
+            // Kiểm tra user có phải Google login không (không có password)
+            if (string.IsNullOrEmpty(user.Password))
+                throw new BadHttpRequestException("CannotChangeEmailForGoogleAccount");
+
+            // Verify password
+            var passwordHash = PasswordUtil.HashPassword(request.Password);
+            if (!string.Equals(user.Password, passwordHash, StringComparison.Ordinal))
+                throw new BadHttpRequestException("InvalidPassword");
+
+            // Kiểm tra email mới đã tồn tại chưa
+            var existingUser = await userRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.Email.ToLower() == request.NewEmail.ToLower() && x.UserId != userId,
+                asNoTracking: true
+            );
+
+            if (existingUser != null)
+                throw new BadHttpRequestException("EmailAlreadyExists");
+
+            // Update email
+            user.Email = request.NewEmail.ToLower();
+            user.UpdatedAt = DateTime.UtcNow;
+
+            var ok = await _unitOfWork.CommitAsync() > 0;
+            if (!ok)
+                throw new BadHttpRequestException("ChangeEmailFailed");
+
+            return true;
+        }
     }
 }
