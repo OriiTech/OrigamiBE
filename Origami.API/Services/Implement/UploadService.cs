@@ -2,6 +2,7 @@
 using Google.Cloud.Storage.V1;
 using Microsoft.AspNetCore.Http;
 using Origami.API.Services.Interfaces;
+using System.Net;
 
 namespace Origami.API.Services.Implement
 {
@@ -9,6 +10,7 @@ namespace Origami.API.Services.Implement
     {
         private readonly string _bucket;
         private readonly StorageClient _storageClient;
+        private readonly GoogleCredential _credential;
         public UploadService(IConfiguration config)
         {
             _bucket = config["Firebase:Bucket"]
@@ -49,6 +51,7 @@ namespace Origami.API.Services.Implement
                 credential = GoogleCredential.FromFile(fullCredentialPath);
             }
 
+            _credential = credential;
             _storageClient = StorageClient.Create(credential);
         }
 
@@ -70,6 +73,21 @@ namespace Origami.API.Services.Implement
             );
 
             return $"https://firebasestorage.googleapis.com/v0/b/{_bucket}/o/{Uri.EscapeDataString(objectName)}?alt=media";
+        }
+
+        public async Task<string> GetSignedUrlAsync(string objectName, TimeSpan? expiration = null)
+        {
+            expiration ??= TimeSpan.FromHours(1); // Default 1 hour
+
+            var urlSigner = UrlSigner.FromCredential(_credential);
+            var signedUrl = await urlSigner.SignAsync(
+                _bucket,
+                objectName,
+                expiration.Value,
+                HttpMethod.Get
+            );
+
+            return signedUrl;
         }
     }
 }

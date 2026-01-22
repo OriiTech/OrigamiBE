@@ -6,6 +6,7 @@ using Origami.DataTier.Models;
 using Origami.DataTier.Repository.Interfaces;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Origami.API.Services.Implement
 {
@@ -24,6 +25,41 @@ namespace Origami.API.Services.Implement
             _uploadService = uploadService;
         }
 
+        private string? ExtractObjectNameFromUrl(string? url)
+        {
+            if (string.IsNullOrEmpty(url)) return null;
+
+            // Pattern: https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{objectName}?alt=media
+            var match = Regex.Match(url, @"/o/([^?]+)");
+            if (match.Success)
+            {
+                return Uri.UnescapeDataString(match.Groups[1].Value);
+            }
+            return null;
+        }
+
+        private async Task<string?> GetSignedAvatarUrlAsync(string? avatarUrl)
+        {
+            if (string.IsNullOrEmpty(avatarUrl)) return null;
+
+            try
+            {
+                var objectName = ExtractObjectNameFromUrl(avatarUrl);
+                if (objectName != null)
+                {
+                    // Tạo signed URL với thời hạn 7 ngày
+                    return await _uploadService.GetSignedUrlAsync(objectName, TimeSpan.FromDays(7));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create signed URL for avatar: {AvatarUrl}", avatarUrl);
+            }
+
+            // Fallback: trả về URL gốc nếu không tạo được signed URL
+            return avatarUrl;
+        }
+
         public async Task<UserProfileResponse> GetMyProfileAsync()
         {
             int userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
@@ -36,13 +72,15 @@ namespace Origami.API.Services.Implement
                 asNoTracking: true
             ) ?? throw new BadHttpRequestException("UserNotFound");
 
+            var avatarUrl = await GetSignedAvatarUrlAsync(user.UserProfile?.AvatarUrl);
+
             return new UserProfileResponse
             {
                 UserId = user.UserId,
                 Username = user.Username,
                 Email = user.Email,
                 DisplayName = user.UserProfile?.DisplayName ?? user.Username,
-                AvatarUrl = user.UserProfile?.AvatarUrl,
+                AvatarUrl = avatarUrl,
                 Bio = user.UserProfile?.Bio
             };
         }
@@ -98,9 +136,9 @@ namespace Origami.API.Services.Implement
                 }
 
                 // Upload lên Firebase Storage
-                var avatarUrl = await _uploadService.UploadAsync(request.AvatarFile, "avatars");
-                profile.AvatarUrl = avatarUrl;
-                _logger.LogInformation($"Avatar uploaded for user {userId}: {avatarUrl}");
+                var uploadedAvatarUrl = await _uploadService.UploadAsync(request.AvatarFile, "avatars");
+                profile.AvatarUrl = uploadedAvatarUrl;
+                _logger.LogInformation($"Avatar uploaded for user {userId}: {uploadedAvatarUrl}");
             }
 
             if (request.Bio != null)
@@ -114,13 +152,15 @@ namespace Origami.API.Services.Implement
             if (!ok)
                 throw new BadHttpRequestException("UpdateProfileFailed");
 
+            var signedAvatarUrl = await GetSignedAvatarUrlAsync(profile.AvatarUrl);
+
             return new UserProfileResponse
             {
                 UserId = user.UserId,
                 Username = user.Username,
                 Email = user.Email,
                 DisplayName = profile.DisplayName ?? user.Username,
-                AvatarUrl = profile.AvatarUrl,
+                AvatarUrl = signedAvatarUrl,
                 Bio = profile.Bio
             };
         }
