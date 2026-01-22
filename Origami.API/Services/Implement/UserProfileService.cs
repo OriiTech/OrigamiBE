@@ -79,6 +79,7 @@ namespace Origami.API.Services.Implement
                 UserId = user.UserId,
                 Username = user.Username,
                 Email = user.Email,
+                RoleId = user.RoleId,
                 DisplayName = user.UserProfile?.DisplayName ?? user.Username,
                 AvatarUrl = avatarUrl,
                 Bio = user.UserProfile?.Bio
@@ -159,6 +160,7 @@ namespace Origami.API.Services.Implement
                 UserId = user.UserId,
                 Username = user.Username,
                 Email = user.Email,
+                RoleId = user.RoleId,
                 DisplayName = profile.DisplayName ?? user.Username,
                 AvatarUrl = signedAvatarUrl,
                 Bio = profile.Bio
