@@ -460,6 +460,33 @@ namespace Origami.API.Services.Implement
                 (!filter.MinViews.HasValue ||
                     x.GuideViews.Count >= filter.MinViews);
 
+            // Build orderBy based on SortBy and SortOrder
+            Func<IQueryable<Guide>, IOrderedQueryable<Guide>>? orderBy = null;
+            if (!string.IsNullOrEmpty(filter.SortBy))
+            {
+                if (filter.SortBy.ToLower() == "price")
+                {
+                    orderBy = filter.SortOrder?.ToLower() == "asc"
+                        ? q => q.OrderBy(x => x.Price ?? decimal.MaxValue)
+                        : q => q.OrderByDescending(x => x.Price ?? decimal.MinValue);
+                }
+                else if (filter.SortBy.ToLower() == "rating")
+                {
+                    orderBy = filter.SortOrder?.ToLower() == "asc"
+                        ? q => q.OrderBy(x => x.GuideRatings.Any() 
+                            ? x.GuideRatings.Average(r => r.Rating) 
+                            : 0)
+                        : q => q.OrderByDescending(x => x.GuideRatings.Any() 
+                            ? x.GuideRatings.Average(r => r.Rating) 
+                            : 0);
+                }
+            }
+            
+            if (orderBy == null)
+            {
+                orderBy = q => q.OrderByDescending(x => x.CreatedAt);
+            }
+
             var response = await repo.GetPagingListAsync(
                 selector: x => _mapper.Map<GetGuideCardResponse>(x),
                 predicate: predicate,
@@ -470,7 +497,7 @@ namespace Origami.API.Services.Implement
                      .Include(x => x.GuideViews)
                      .Include(x => x.GuideRatings)
                      .Include(x => x.GuidePromoPhotos),
-                     orderBy: q => q.OrderByDescending(x => x.CreatedAt),
+                     orderBy: orderBy,
                      page: pagingModel.page,
                      size: pagingModel.size
              );
@@ -594,6 +621,59 @@ namespace Origami.API.Services.Implement
                 Total = guideIds.Count,
                 TotalPages = totalPages
             };
+        }
+
+        public async Task<IPaginate<GetGuideCardResponse>> ViewMyPurchasedGuideCards(PagingModel pagingModel)
+        {
+            int userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
+
+            var guideAccessRepo = _unitOfWork.GetRepository<GuideAccess>();
+            var guideIds = await guideAccessRepo.GetListAsync(
+                predicate: x => x.UserId == userId,
+                selector: x => x.GuideId,
+                asNoTracking: true
+            );
+
+            if (!guideIds.Any())
+            {
+                return new Paginate<GetGuideCardResponse>
+                {
+                    Items = new List<GetGuideCardResponse>(),
+                    Page = pagingModel.page,
+                    Size = pagingModel.size,
+                    Total = 0,
+                    TotalPages = 0
+                };
+            }
+
+            var repo = _unitOfWork.GetRepository<Guide>();
+            Expression<Func<Guide, bool>> predicate = x => guideIds.Contains(x.GuideId);
+
+            var response = await repo.GetPagingListAsync(
+                selector: x => _mapper.Map<GetGuideCardResponse>(x),
+                predicate: predicate,
+                include: q => q
+                    .Include(x => x.Author)
+                     .ThenInclude(a => a.UserProfile)
+                     .Include(x => x.Categories)
+                     .Include(x => x.GuideViews)
+                     .Include(x => x.GuideRatings)
+                     .Include(x => x.GuidePromoPhotos),
+                     orderBy: q => q.OrderByDescending(x => x.CreatedAt),
+                     page: pagingModel.page,
+                     size: pagingModel.size
+             );
+
+            // Convert PromoPhoto URLs to signed URLs
+            foreach (var item in response.Items)
+            {
+                if (item.PromoPhotos != null && item.PromoPhotos.Any())
+                {
+                    item.PromoPhotos = await GetSignedPromoPhotoUrlsAsync(item.PromoPhotos);
+                }
+            }
+
+            return response;
         }
 
         private RatingDto BuildRating(ICollection<GuideRating> ratings)

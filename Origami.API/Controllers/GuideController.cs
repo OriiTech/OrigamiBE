@@ -73,6 +73,15 @@ namespace Origami.API.Controllers
             var response = await _guideService.ViewMyFavoriteGuideCards(pagingModel);
             return Ok(response);
         }
+
+        [Authorize(Roles = RoleConstants.User)]
+        [HttpGet(ApiEndPointConstant.Guide.MyPurchasedGuideCardsEndPoint)]
+        [ProducesResponseType(typeof(IPaginate<GetGuideCardResponse>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ViewMyPurchasedGuideCards([FromQuery] PagingModel pagingModel)
+        {
+            var response = await _guideService.ViewMyPurchasedGuideCards(pagingModel);
+            return Ok(response);
+        }
         [Authorize(Roles = RoleConstants.User)]
         [HttpPost(ApiEndPointConstant.Guide.GuidesEndPoint)]
         [ProducesResponseType(typeof(int), StatusCodes.Status201Created)]

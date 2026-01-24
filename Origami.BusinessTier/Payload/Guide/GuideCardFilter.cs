@@ -28,6 +28,9 @@ namespace Origami.BusinessTier.Payload.Guide
         public bool? IsNew { get; set; }
 
         public DateTime? CreatedAt { get; set; }
+
+        public string? SortBy { get; set; } // "price", "rating"
+        public string? SortOrder { get; set; } // "asc", "desc"
     }
 
 }
