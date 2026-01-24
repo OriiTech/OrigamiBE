@@ -499,6 +499,10 @@ namespace Origami.API.Services.Implement
 
         public async Task<int> AddPromoPhotoAsync(int guideId, AddPromoPhotoRequest request)
         {
+            // Check if user is authenticated
+            int userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
+            _logger.LogInformation($"AddPromoPhotoAsync: User {userId} attempting to add promo photo to guide {guideId}");
+
             var guideRepo = _unitOfWork.GetRepository<Guide>();
             var guide = await guideRepo.GetFirstOrDefaultAsync(
                 predicate: x => x.GuideId == guideId,
@@ -506,12 +510,17 @@ namespace Origami.API.Services.Implement
             );
 
             if (guide == null)
+            {
+                _logger.LogWarning($"AddPromoPhotoAsync: Guide {guideId} not found");
                 throw new BadHttpRequestException("Guide not found");
+            }
+
+            _logger.LogInformation($"AddPromoPhotoAsync: Guide {guideId} found, AuthorId={guide.AuthorId}, CurrentUserId={userId}");
 
             // Check if user is the author
-            int userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
             if (guide.AuthorId != userId)
             {
+                _logger.LogWarning($"AddPromoPhotoAsync: User {userId} is not the author (AuthorId={guide.AuthorId}) of guide {guideId}");
                 throw new BadHttpRequestException("You don't have permission to add promo photo to this guide");
             }
 

@@ -77,16 +77,45 @@ namespace Origami.API.Controllers
         [Authorize(Roles = RoleConstants.User)]
         [HttpPost(ApiEndPointConstant.Guide.GuidePromoPhotoEndPoint)]
         [Consumes("multipart/form-data")]
+        [RequestSizeLimit(10 * 1024 * 1024)] // 10MB limit
         [ProducesResponseType(typeof(int), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> AddPromoPhoto(int id, [FromForm] AddPromoPhotoRequest request)
         {
-            if (request == null)
+            try
             {
-                return BadRequest(new { message = "Request body is required" });
-            }
+                if (request == null)
+                {
+                    _logger.LogWarning("AddPromoPhoto: Request body is null");
+                    return BadRequest(new { message = "Request body is required" });
+                }
 
-            var photoId = await _guideService.AddPromoPhotoAsync(id, request);
-            return Ok(new { photoId });
+                if (request.PhotoFile == null || request.PhotoFile.Length == 0)
+                {
+                    _logger.LogWarning("AddPromoPhoto: PhotoFile is null or empty");
+                    return BadRequest(new { message = "Photo file is required" });
+                }
+
+                _logger.LogInformation($"AddPromoPhoto: Processing request for guide {id}");
+                var photoId = await _guideService.AddPromoPhotoAsync(id, request);
+                _logger.LogInformation($"AddPromoPhoto: Successfully added promo photo {photoId} for guide {id}");
+                return Ok(new { photoId });
+            }
+            catch (BadHttpRequestException ex)
+            {
+                _logger.LogWarning($"AddPromoPhoto: BadRequest - {ex.Message}");
+                if (ex.Message.Contains("permission") || ex.Message.Contains("Unauthorized"))
+                {
+                    return StatusCode(403, new { message = ex.Message });
+                }
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"AddPromoPhoto: Error adding promo photo for guide {id}");
+                return StatusCode(500, new { message = "An error occurred while adding promo photo", error = ex.Message });
+            }
         }
 
     }

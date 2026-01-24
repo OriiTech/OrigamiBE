@@ -102,7 +102,14 @@ builder.Services.AddControllers().AddJsonOptions(x =>
 {
     x.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     x.JsonSerializerOptions.Converters.Add(new TimeOnlyJsonConverter());
-    x.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping; // Hỗ trợ UTF-8 đầy đủ cho tiếng Việt
+    x.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+});
+
+// Cấu hình file size limit cho multipart/form-data (10MB)
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 10 * 1024 * 1024; // 10MB
+    options.ValueLengthLimit = 10 * 1024 * 1024; // 10MB
 });
 builder.Services.AddDatabase(builder);
 builder.Services.AddUnitOfWork();
