@@ -425,6 +425,72 @@ namespace Origami.API.Services.Implement
             return response;
         }
 
+        public async Task<IPaginate<GetGuideCardResponse>> ViewMyFavoriteGuideCards(PagingModel pagingModel)
+        {
+            int userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
+
+            var favoriteRepo = _unitOfWork.GetRepository<Favorite>();
+            var guideRepo = _unitOfWork.GetRepository<Guide>();
+
+            // Get favorite guide IDs
+            var favorites = await favoriteRepo.GetListAsync(
+                predicate: x => x.UserId == userId,
+                orderBy: q => q.OrderByDescending(x => x.CreatedAt),
+                asNoTracking: true
+            );
+
+            var guideIds = favorites.Select(f => f.GuideId).ToList();
+            if (!guideIds.Any())
+            {
+                return new Paginate<GetGuideCardResponse>
+                {
+                    Items = new List<GetGuideCardResponse>(),
+                    Page = pagingModel.page,
+                    Size = pagingModel.size,
+                    Total = 0,
+                    TotalPages = 0
+                };
+            }
+
+            // Get guides by IDs with pagination
+            var skip = (pagingModel.page - 1) * pagingModel.size;
+            var take = pagingModel.size;
+            var paginatedGuideIds = guideIds.Skip(skip).Take(take).ToList();
+
+            Expression<Func<Guide, bool>> predicate = x => paginatedGuideIds.Contains(x.GuideId);
+
+            var guides = await guideRepo.GetListAsync(
+                selector: x => _mapper.Map<GetGuideCardResponse>(x),
+                predicate: predicate,
+                include: q => q
+                    .Include(x => x.Author)
+                     .ThenInclude(a => a.UserProfile)
+                     .Include(x => x.Categories)
+                     .Include(x => x.GuideViews)
+                     .Include(x => x.GuideRatings)
+                     .Include(x => x.GuidePromoPhotos),
+                orderBy: q => q.OrderByDescending(x => x.CreatedAt),
+                asNoTracking: true
+            );
+
+            // Maintain order from favorites
+            var orderedGuides = paginatedGuideIds
+                .Select(id => guides.FirstOrDefault(g => g.Id == id))
+                .Where(g => g != null)
+                .ToList();
+
+            var totalPages = (int)Math.Ceiling((double)guideIds.Count / pagingModel.size);
+
+            return new Paginate<GetGuideCardResponse>
+            {
+                Items = orderedGuides,
+                Page = pagingModel.page,
+                Size = pagingModel.size,
+                Total = guideIds.Count,
+                TotalPages = totalPages
+            };
+        }
+
         private RatingDto BuildRating(ICollection<GuideRating> ratings)
         {
             if (ratings == null || !ratings.Any())

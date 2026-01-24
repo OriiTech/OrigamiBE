@@ -20,15 +20,16 @@ namespace Origami.API.Services.Implement
         }
         public async Task<int> CreateFavorite(FavoriteInfo request)
         {
+            int userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
             var repo = _unitOfWork.GetRepository<Favorite>();
 
-            bool alreadyExists = await repo.AnyAsync(x => x.UserId == request.UserId && x.GuideId == request.GuideId);
+            bool alreadyExists = await repo.AnyAsync(x => x.UserId == userId && x.GuideId == request.GuideId);
             if (alreadyExists)
                 throw new BadHttpRequestException("FavoriteAlreadyExists");
 
             var favorite = new Favorite
             {
-                UserId = request.UserId,
+                UserId = userId,
                 GuideId = request.GuideId,
                 CreatedAt = DateTime.UtcNow
             };
