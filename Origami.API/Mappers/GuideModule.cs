@@ -29,7 +29,9 @@ namespace Origami.API.Mappers
                         ? s.GuideRatings.Average(r => r.Rating)
                         : 0))
             .ForMember(d => d.PromoPhotos,
-                o => o.MapFrom(s => s.GuidePromoPhotos.Select(p => p.PhotoId)))
+                o => o.MapFrom(s => s.GuidePromoPhotos
+                    .OrderBy(p => p.DisplayOrder)
+                    .Select(p => p.Url)))
             .ForMember(d => d.New, o => o.MapFrom(s => s.IsNew))
             .ForMember(d => d.Category,
                 o => o.MapFrom(s => s.Categories)); 

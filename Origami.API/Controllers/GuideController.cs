@@ -74,5 +74,20 @@ namespace Origami.API.Controllers
             return Ok("UpdateStatusSuccess");
         }
 
+        [Authorize(Roles = RoleConstants.User)]
+        [HttpPost(ApiEndPointConstant.Guide.GuidePromoPhotoEndPoint)]
+        [Consumes("multipart/form-data")]
+        [ProducesResponseType(typeof(int), StatusCodes.Status201Created)]
+        public async Task<IActionResult> AddPromoPhoto(int id, [FromForm] AddPromoPhotoRequest request)
+        {
+            if (request == null)
+            {
+                return BadRequest(new { message = "Request body is required" });
+            }
+
+            var photoId = await _guideService.AddPromoPhotoAsync(id, request);
+            return Ok(new { photoId });
+        }
+
     }
 }

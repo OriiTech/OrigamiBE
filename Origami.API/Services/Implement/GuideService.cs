@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Origami.API.Services.Interfaces;
+using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Guide;
 using Origami.DataTier.Models;
@@ -9,6 +10,7 @@ using Origami.DataTier.Paginate;
 using Origami.DataTier.Repository.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -19,11 +21,13 @@ namespace Origami.API.Services.Implement
     {
         private readonly IConfiguration _configuration;
         private readonly IBadgeEvaluator _badgeEvaluator;
+        private readonly IUploadService _uploadService;
 
         public GuideService(IUnitOfWork<OrigamiDbContext> unitOfWork, ILogger<GuideService> logger, IMapper mapper,
-           IHttpContextAccessor httpContextAccessor, IConfiguration configuration) : base(unitOfWork, logger, mapper, httpContextAccessor)
+           IHttpContextAccessor httpContextAccessor, IConfiguration configuration, IUploadService uploadService) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
             _configuration = configuration;
+            _uploadService = uploadService;
         }
 
         public async Task<int> CreateNewGuide(GuideInfo request)
@@ -491,6 +495,64 @@ namespace Origami.API.Services.Implement
                     ? new List<string>()
                     : req.Tools.Split('|').ToList()
             };
+        }
+
+        public async Task<int> AddPromoPhotoAsync(int guideId, AddPromoPhotoRequest request)
+        {
+            var guideRepo = _unitOfWork.GetRepository<Guide>();
+            var guide = await guideRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.GuideId == guideId,
+                asNoTracking: false
+            );
+
+            if (guide == null)
+                throw new BadHttpRequestException("Guide not found");
+
+            // Check if user is the author
+            int userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
+            if (guide.AuthorId != userId)
+            {
+                throw new BadHttpRequestException("You don't have permission to add promo photo to this guide");
+            }
+
+            // Validate file
+            if (request.PhotoFile == null || request.PhotoFile.Length == 0)
+            {
+                throw new BadHttpRequestException("Photo file is required");
+            }
+
+            // Validate file type (chỉ cho phép image)
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            var fileExtension = Path.GetExtension(request.PhotoFile.FileName).ToLowerInvariant();
+            
+            if (!allowedExtensions.Contains(fileExtension))
+            {
+                throw new BadHttpRequestException("Only image files are allowed (jpg, jpeg, png, gif, webp)");
+            }
+
+            // Validate file size (max 5MB)
+            const long maxFileSize = 5 * 1024 * 1024; // 5MB
+            if (request.PhotoFile.Length > maxFileSize)
+            {
+                throw new BadHttpRequestException("File size must be less than 5MB");
+            }
+
+            // Upload file lên Firebase Storage
+            var uploadedUrl = await _uploadService.UploadAsync(request.PhotoFile, "guide-promo-photos");
+            _logger.LogInformation($"Promo photo uploaded for guide {guideId}: {uploadedUrl}");
+
+            var promoRepo = _unitOfWork.GetRepository<GuidePromoPhoto>();
+            var promoPhoto = new GuidePromoPhoto
+            {
+                GuideId = guideId,
+                Url = uploadedUrl,
+                DisplayOrder = request.DisplayOrder
+            };
+
+            await promoRepo.InsertAsync(promoPhoto);
+            await _unitOfWork.CommitAsync();
+
+            return promoPhoto.PhotoId;
         }
 
     }

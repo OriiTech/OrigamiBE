@@ -86,6 +86,7 @@ namespace Origami.BusinessTier.Constants
             public const string GuideCardsEndPoint = GuidesEndPoint + "/cards";
             public const string GuideDetailEndPoint = GuideEndPoint + "/detail";
             public const string GuideViewEndPoint = GuideEndPoint + "/view";
+            public const string GuidePromoPhotoEndPoint = GuideEndPoint + "/promo-photos";
         }
 
         //Auth
