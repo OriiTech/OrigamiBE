@@ -131,22 +131,39 @@ namespace Origami.API.Services.Implement
 
             var guideRepo = _unitOfWork.GetRepository<Guide>();
             var stepRepo = _unitOfWork.GetRepository<Step>();
+            var stepTipRepo = _unitOfWork.GetRepository<StepTip>();
             var categoryRepo = _unitOfWork.GetRepository<Category>();
             var promoRepo = _unitOfWork.GetRepository<GuidePromoPhoto>();
             var previewRepo = _unitOfWork.GetRepository<GuidePreview>();
             var requirementRepo = _unitOfWork.GetRepository<GuideRequirement>();
+            var origamiRepo = _unitOfWork.GetRepository<DataTier.Models.Origami>();
 
-            //Check title
+            int? resolvedOrigamiId = request.OrigamiId;
+            if (resolvedOrigamiId == null && request.OrigamiNew != null && !string.IsNullOrWhiteSpace(request.OrigamiNew.Name))
+            {
+                var newOrigami = new DataTier.Models.Origami
+                {
+                    Name = request.OrigamiNew.Name.Trim(),
+                    Description = request.OrigamiNew.Description,
+                    ImageUrl = request.OrigamiNew.ImageUrl,
+                    CreatedBy = authorId,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await origamiRepo.InsertAsync(newOrigami);
+                await _unitOfWork.CommitAsync();
+                resolvedOrigamiId = newOrigami.OrigamiId;
+            }
+
             if (await guideRepo.AnyAsync(x => x.Title == request.Title))
                 throw new BadHttpRequestException("GuideTitleAlreadyExists");
 
-            //Create Guide
             var guide = new Guide
             {
                 Title = request.Title,
                 Subtitle = request.Subtitle,
                 Description = request.Description,
                 AuthorId = authorId,
+                OrigamiId = resolvedOrigamiId,
                 Price = request.Price.Amount,
                 PaidOnly = request.Price.PaidOnly,
                 CreatedAt = DateTime.UtcNow,
@@ -156,31 +173,31 @@ namespace Origami.API.Services.Implement
 
             await guideRepo.InsertAsync(guide);
             await _unitOfWork.CommitAsync();
-            
-            //Categories
-            if (request.Category?.Any() == true)
+
+            var categoryNames = new List<string>();
+            if (!string.IsNullOrWhiteSpace(request.Level)) categoryNames.Add(request.Level.Trim());
+            if (request.Category != null) categoryNames.AddRange(request.Category.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()));
+            if (categoryNames.Any())
             {
-                var categoryNames = request.Category!;
                 var categories = await categoryRepo.GetListAsync(
-                    predicate: x => x.CategoryName != null && categoryNames.Contains(x.CategoryName)
-                );
+                    predicate: x => x.CategoryName != null && categoryNames.Contains(x.CategoryName));
                 guide.Categories = categories.ToList();
             }
 
-            //Product Preview
             if (request.ProductPreview != null)
             {
-                if (request.ProductPreview.VideoAvailable &&
-                    !string.IsNullOrEmpty(request.ProductPreview.VideoUrl))
+                bool hasVideo = request.ProductPreview.VideoAvailable && !string.IsNullOrEmpty(request.ProductPreview.VideoUrl);
+                if (hasVideo)
                 {
                     await previewRepo.InsertAsync(new GuidePreview
                     {
                         GuideId = guide.GuideId,
+                        VideoAvailable = true,
                         VideoUrl = request.ProductPreview.VideoUrl
                     });
                 }
 
-                foreach (var photo in request.ProductPreview.PromoPhotos)
+                foreach (var photo in request.ProductPreview.PromoPhotos ?? Enumerable.Empty<PromoPhotoDto>())
                 {
                     await promoRepo.InsertAsync(new GuidePromoPhoto
                     {
@@ -190,18 +207,12 @@ namespace Origami.API.Services.Implement
                     });
                 }
             }
-            //Steps
+
+            var stepList = new List<Step>();
             foreach (var stepDto in request.Steps.OrderBy(x => x.Order))
             {
-                string? imageUrl = null;
-                string? videoUrl = null;
-
-                var firstMedia = stepDto.Medias?.OrderBy(m => m.Order).FirstOrDefault();
-                if (firstMedia != null)
-                {
-                    if (firstMedia.Type == 1) imageUrl = firstMedia.Url;
-                    if (firstMedia.Type == 2) videoUrl = firstMedia.Url;
-                }
+                string? imageUrl = stepDto.Medias?.FirstOrDefault(m => m.Type == 1)?.Url;
+                string? videoUrl = stepDto.Medias?.FirstOrDefault(m => m.Type == 2)?.Url;
 
                 var step = new Step
                 {
@@ -213,11 +224,29 @@ namespace Origami.API.Services.Implement
                     VideoUrl = videoUrl,
                     CreatedAt = DateTime.UtcNow
                 };
-
                 await stepRepo.InsertAsync(step);
+                stepList.Add(step);
             }
 
-            //Requirements
+            await _unitOfWork.CommitAsync();
+
+            var stepsOrdered = stepList.OrderBy(s => s.StepNumber).ToList();
+            var stepsDtoOrdered = request.Steps.OrderBy(x => x.Order).ToList();
+            for (int i = 0; i < stepsOrdered.Count && i < stepsDtoOrdered.Count; i++)
+            {
+                var tips = stepsDtoOrdered[i].Tips ?? new List<string>();
+                for (int j = 0; j < tips.Count; j++)
+                {
+                    if (string.IsNullOrWhiteSpace(tips[j])) continue;
+                    await stepTipRepo.InsertAsync(new StepTip
+                    {
+                        StepId = stepsOrdered[i].StepId,
+                        DisplayOrder = j,
+                        Content = tips[j].Trim()
+                    });
+                }
+            }
+
             if (request.Requirements != null)
             {
                 await requirementRepo.InsertAsync(new GuideRequirement
@@ -225,8 +254,8 @@ namespace Origami.API.Services.Implement
                     GuideId = guide.GuideId,
                     PaperType = request.Requirements.PaperType,
                     PaperSize = request.Requirements.PaperSize,
-                    Colors = string.Join("||", request.Requirements.Color),
-                    Tools = string.Join("||", request.Requirements.Tools)
+                    Colors = request.Requirements.Color != null ? string.Join("||", request.Requirements.Color) : null,
+                    Tools = request.Requirements.Tools != null ? string.Join("||", request.Requirements.Tools) : null
                 });
             }
 

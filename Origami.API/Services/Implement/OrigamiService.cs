@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Payload;
@@ -31,8 +31,10 @@ namespace Origami.API.Services.Implement
             if (existingOrigami != null)
                 throw new BadHttpRequestException("OrigamiExisted");
 
+            int createdBy = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
             var newOrigami = _mapper.Map<DataTier.Models.Origami>(request);
             newOrigami.CreatedAt = DateTime.UtcNow;
+            newOrigami.CreatedBy = createdBy;
 
             await repo.InsertAsync(newOrigami);
 
