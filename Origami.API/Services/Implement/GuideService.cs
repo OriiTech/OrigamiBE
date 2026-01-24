@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Origami.API.Services.Interfaces;
@@ -736,12 +736,15 @@ namespace Origami.API.Services.Implement
                         Order = s.StepNumber,
                         Title = s.Title ?? string.Empty,
                         Description = s.Description,
+                        ImageUrl = s.ImageUrl,
+                        VideoUrl = s.VideoUrl,
                         Tips = (s.StepTips == null || !s.StepTips.Any())
-                            ? null
-                            : string.Join("||", s.StepTips
-                                .Select(t => t?.ToString() ?? string.Empty)
+                            ? new List<string>()
+                            : s.StepTips
+                                .OrderBy(t => t.DisplayOrder)
+                                .Select(t => t.Content ?? string.Empty)
                                 .Where(t => !string.IsNullOrEmpty(t))
-                            ),
+                                .ToList(),
                         MediaUrl = string.IsNullOrEmpty(s.VideoUrl)
                             ? new List<MediaDto>()
                             : s.VideoUrl

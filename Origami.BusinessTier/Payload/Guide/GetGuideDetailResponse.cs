@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -100,8 +100,11 @@ namespace Origami.BusinessTier.Payload.Guide
         public string Title { get; set; }
         public string? Description { get; set; }
 
-        // chuỗi ghép bằng "||"
-        public string? Tips { get; set; }
+        public string? ImageUrl { get; set; }
+        public string? VideoUrl { get; set; }
+
+        /// <summary>Nội dung mẹo từ StepTip, theo DisplayOrder.</summary>
+        public List<string> Tips { get; set; } = new List<string>();
 
         public List<MediaDto> MediaUrl { get; set; }
     }
