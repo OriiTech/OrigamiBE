@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
@@ -26,6 +26,14 @@ namespace Origami.API.Controllers
             _authService = authService;
             _authServiceHash = authServiceHash;
             _configuration = configuration;
+        }
+
+        [HttpPost(ApiEndPointConstant.Auth.SendOtp)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> SendOtp([FromBody] SendOtpForRegisterRequest request)
+        {
+            await _authService.SendOtpForRegisterAsync(request.Email);
+            return Ok(new { message = "OtpSent" });
         }
 
         [HttpPost(ApiEndPointConstant.Auth.Register)]

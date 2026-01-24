@@ -1,8 +1,10 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using Origami.API.Services.Implement;
 using Origami.API.Services.Interfaces;
+using Origami.BusinessTier.Constants;
 using Origami.BusinessTier.Payload.Auth;
 using Origami.BusinessTier.Payload.User;
 using Origami.BusinessTier.Utils;
@@ -18,62 +20,88 @@ namespace Origami.API.Services.Implement
     public class AuthService : BaseService<AuthService>, IAuthService
     {
         private readonly IConfiguration _configuration;
+        private readonly IEmailService _emailService;
+        private readonly IMemoryCache _cache;
+
+        private const string OtpCacheKeyPrefix = "otp:register:";
+        private static readonly TimeSpan OtpExpiry = TimeSpan.FromMinutes(5);
 
         public AuthService(
             IUnitOfWork<OrigamiDbContext> unitOfWork,
             ILogger<AuthService> logger,
             IMapper mapper,
             IHttpContextAccessor httpContextAccessor,
-            IConfiguration configuration
+            IConfiguration configuration,
+            IEmailService emailService,
+            IMemoryCache cache
         ) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
             _configuration = configuration;
+            _emailService = emailService;
+            _cache = cache;
+        }
+
+        public async Task SendOtpForRegisterAsync(string email)
+        {
+            var userRepo = _unitOfWork.GetRepository<User>();
+            var existingUser = await userRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.Email.ToLower() == email.ToLower(),
+                asNoTracking: true
+            );
+            if (existingUser != null)
+                throw new BadHttpRequestException("EmailAlreadyExists");
+
+            var code = new Random().Next(100000, 999999).ToString();
+            var key = OtpCacheKeyPrefix + email.ToLower();
+            _cache.Set(key, code, OtpExpiry);
+
+            var htmlBody = $@"
+                <html><body style='font-family: Arial,sans-serif;'>
+                <h2>Mã OTP đăng ký Origami</h2>
+                <p>Mã xác thực của bạn: <strong>{code}</strong></p>
+                <p>Mã có hiệu lực trong 5 phút. Không chia sẻ mã này với ai.</p>
+                <p>Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>
+                </body></html>";
+
+            await _emailService.SendEmailAsync(email, "Mã OTP đăng ký - Origami", htmlBody);
         }
 
         public async Task<AuthResponse> Register(RegisterRequest request)
         {
+            // Xác thực OTP
+            var cacheKey = OtpCacheKeyPrefix + request.Email.ToLower();
+            if (!_cache.TryGetValue(cacheKey, out string? storedOtp) || storedOtp != request.Otp.Trim())
+                throw new BadHttpRequestException("InvalidOrExpiredOtp");
+
+            // Password và ConfirmPassword đã được [Compare] validate; kiểm tra thêm server-side
+            if (request.Password != request.ConfirmPassword)
+                throw new BadHttpRequestException("PasswordAndConfirmPasswordDoNotMatch");
+
             var userRepo = _unitOfWork.GetRepository<User>();
 
-            // Kiểm tra email đã tồn tại chưa
             var existingUser = await userRepo.GetFirstOrDefaultAsync(
                 predicate: x => x.Email.ToLower() == request.Email.ToLower(),
                 asNoTracking: true
             );
-
             if (existingUser != null)
                 throw new BadHttpRequestException("EmailAlreadyExists");
 
-            // Kiểm tra username đã tồn tại chưa (nếu cần)
             var existingUsername = await userRepo.GetFirstOrDefaultAsync(
                 predicate: x => x.Username.ToLower() == request.Username.ToLower(),
                 asNoTracking: true
             );
-
             if (existingUsername != null)
                 throw new BadHttpRequestException("UsernameAlreadyExists");
 
-            // Kiểm tra RoleId có tồn tại không (nếu có)
-            if (request.RoleId.HasValue)
-            {
-                var roleRepo = _unitOfWork.GetRepository<Role>();
-                var role = await roleRepo.GetFirstOrDefaultAsync(
-                    predicate: x => x.RoleId == request.RoleId.Value,
-                    asNoTracking: true
-                );
-                if (role == null)
-                    throw new BadHttpRequestException("RoleNotFound");
-            }
-
-            // Hash password
             var hashedPassword = PasswordUtil.HashPassword(request.Password);
+            var defaultRoleId = int.Parse(RoleConstants.User);
 
-            // Tạo user mới
             var newUser = new User
             {
                 Username = request.Username,
-                Email = request.Email,
+                Email = request.Email.ToLower(),
                 Password = hashedPassword,
-                RoleId = request.RoleId ?? 1,
+                RoleId = defaultRoleId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -84,7 +112,8 @@ namespace Origami.API.Services.Implement
             if (!isSuccessful)
                 throw new BadHttpRequestException("RegisterFailed");
 
-            // Load user với Role để tạo token
+            _cache.Remove(cacheKey);
+
             var createdUser = await userRepo.GetFirstOrDefaultAsync(
                 predicate: x => x.UserId == newUser.UserId,
                 include: q => q.Include(u => u.Role),
