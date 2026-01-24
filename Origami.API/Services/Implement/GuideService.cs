@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Origami.API.Services.Implement
@@ -28,6 +29,58 @@ namespace Origami.API.Services.Implement
         {
             _configuration = configuration;
             _uploadService = uploadService;
+        }
+
+        private string? ExtractObjectNameFromUrl(string? url)
+        {
+            if (string.IsNullOrEmpty(url)) return null;
+
+            // Pattern: https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{objectName}?alt=media
+            var match = System.Text.RegularExpressions.Regex.Match(url, @"/o/([^?]+)");
+            if (match.Success)
+            {
+                return Uri.UnescapeDataString(match.Groups[1].Value);
+            }
+            return null;
+        }
+
+        private async Task<string?> GetSignedPhotoUrlAsync(string? photoUrl)
+        {
+            if (string.IsNullOrEmpty(photoUrl)) return null;
+
+            try
+            {
+                var objectName = ExtractObjectNameFromUrl(photoUrl);
+                if (objectName != null)
+                {
+                    // Tạo signed URL với thời hạn 7 ngày
+                    return await _uploadService.GetSignedUrlAsync(objectName, TimeSpan.FromDays(7));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create signed URL for photo: {PhotoUrl}", photoUrl);
+            }
+
+            // Fallback: trả về URL gốc nếu không tạo được signed URL
+            return photoUrl;
+        }
+
+        private async Task<List<string>> GetSignedPromoPhotoUrlsAsync(List<string> promoPhotoUrls)
+        {
+            if (promoPhotoUrls == null || !promoPhotoUrls.Any())
+                return new List<string>();
+
+            var signedUrls = new List<string>();
+            foreach (var url in promoPhotoUrls)
+            {
+                var signedUrl = await GetSignedPhotoUrlAsync(url);
+                if (signedUrl != null)
+                {
+                    signedUrls.Add(signedUrl);
+                }
+            }
+            return signedUrls;
         }
 
         public async Task<int> CreateNewGuide(GuideInfo request)
@@ -397,6 +450,15 @@ namespace Origami.API.Services.Implement
                      size: pagingModel.size
              );
 
+            // Convert PromoPhoto URLs to signed URLs
+            foreach (var item in response.Items)
+            {
+                if (item.PromoPhotos != null && item.PromoPhotos.Any())
+                {
+                    item.PromoPhotos = await GetSignedPromoPhotoUrlsAsync(item.PromoPhotos);
+                }
+            }
+
             return response;
         }
 
@@ -421,6 +483,15 @@ namespace Origami.API.Services.Implement
                      page: pagingModel.page,
                      size: pagingModel.size
              );
+
+            // Convert PromoPhoto URLs to signed URLs
+            foreach (var item in response.Items)
+            {
+                if (item.PromoPhotos != null && item.PromoPhotos.Any())
+                {
+                    item.PromoPhotos = await GetSignedPromoPhotoUrlsAsync(item.PromoPhotos);
+                }
+            }
 
             return response;
         }
@@ -480,6 +551,15 @@ namespace Origami.API.Services.Implement
                 .ToList();
 
             var totalPages = (int)Math.Ceiling((double)guideIds.Count / pagingModel.size);
+
+            // Convert PromoPhoto URLs to signed URLs
+            foreach (var item in orderedGuides)
+            {
+                if (item.PromoPhotos != null && item.PromoPhotos.Any())
+                {
+                    item.PromoPhotos = await GetSignedPromoPhotoUrlsAsync(item.PromoPhotos);
+                }
+            }
 
             return new Paginate<GetGuideCardResponse>
             {
