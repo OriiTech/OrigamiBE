@@ -34,6 +34,17 @@ namespace Origami.BusinessTier.Payload.Guide
         public bool Bestseller { get; set; }
         public bool Trending { get; set; }
         public bool New { get; set; }
+        
+        public OrigamiDto? Origami { get; set; }
+        public bool HasAccess { get; set; }
+    }
+    
+    public class OrigamiDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = null!;
+        public string? Description { get; set; }
+        public string? ImageUrl { get; set; }
     }
 
     public class CreatorDto

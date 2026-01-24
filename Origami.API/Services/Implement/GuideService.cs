@@ -258,9 +258,24 @@ namespace Origami.API.Services.Implement
                         .Include(x => x.GuideRatings)
                         .Include(x => x.Favorites)
                         .Include(x => x.Steps).ThenInclude(s => s.StepTips)
-                        .Include(x => x.GuideRequirement),
+                        .Include(x => x.GuideRequirement)
+                        .Include(x => x.Origami)
+                        .Include(x => x.GuideAccesses),
                     asNoTracking: true
                 ) ?? throw new BadHttpRequestException("GuideNotFound");
+            
+            // Kiểm tra GuideAccess
+            int? userId = GetCurrentUserId();
+            bool hasAccess = false;
+            if (userId.HasValue)
+            {
+                hasAccess = guide.GuideAccesses.Any(ga => ga.UserId == userId.Value);
+            }
+            // Nếu guide không phải paid_only thì tự động có access
+            if (!guide.PaidOnly)
+            {
+                hasAccess = true;
+            }
             var level = guide.Categories
                 .FirstOrDefault(c => c.Type == "LEVEL")
                 ?.CategoryName;
@@ -308,7 +323,17 @@ namespace Origami.API.Services.Implement
 
                 Bestseller = guide.Bestseller,
                 Trending = guide.Trending,
-                New = guide.IsNew
+                New = guide.IsNew,
+                
+                Origami = guide.Origami != null ? new OrigamiDto
+                {
+                    Id = guide.Origami.OrigamiId,
+                    Name = guide.Origami.Name,
+                    Description = guide.Origami.Description,
+                    ImageUrl = guide.Origami.ImageUrl
+                } : null,
+                
+                HasAccess = hasAccess
             };
             return response;
 
@@ -943,6 +968,24 @@ namespace Origami.API.Services.Implement
                 CreatedAt = now
             };
             await transactionRepo.InsertAsync(transactionToAdmin);
+
+            // Tạo GuideAccess cho buyer
+            var guideAccessRepo = _unitOfWork.GetRepository<GuideAccess>();
+            var existingAccess = await guideAccessRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.UserId == buyerId && x.GuideId == request.GuideId,
+                asNoTracking: true
+            );
+
+            if (existingAccess == null)
+            {
+                var guideAccess = new GuideAccess
+                {
+                    UserId = buyerId,
+                    GuideId = request.GuideId,
+                    GrantedAt = DateTime.UtcNow
+                };
+                await guideAccessRepo.InsertAsync(guideAccess);
+            }
 
             await _unitOfWork.CommitAsync();
 
