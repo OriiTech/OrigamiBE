@@ -361,6 +361,8 @@ namespace Origami.API.Services.Implement
                 (string.IsNullOrEmpty(filter.CreatorName) ||
                     (x.Author.Username != null && x.Author.Username.Contains(filter.CreatorName))) &&
 
+                (!filter.AuthorId.HasValue || x.AuthorId == filter.AuthorId.Value) &&
+
                 (!filter.CategoryId.HasValue ||
                     x.Categories.Any(c => c.CategoryId == filter.CategoryId)) &&
 
@@ -397,6 +399,32 @@ namespace Origami.API.Services.Implement
 
             return response;
         }
+
+        public async Task<IPaginate<GetGuideCardResponse>> ViewMyGuideCards(PagingModel pagingModel)
+        {
+            int userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
+
+            var repo = _unitOfWork.GetRepository<Guide>();
+            Expression<Func<Guide, bool>> predicate = x => x.AuthorId == userId;
+
+            var response = await repo.GetPagingListAsync(
+                selector: x => _mapper.Map<GetGuideCardResponse>(x),
+                predicate: predicate,
+                include: q => q
+                    .Include(x => x.Author)
+                     .ThenInclude(a => a.UserProfile)
+                     .Include(x => x.Categories)
+                     .Include(x => x.GuideViews)
+                     .Include(x => x.GuideRatings)
+                     .Include(x => x.GuidePromoPhotos),
+                     orderBy: q => q.OrderByDescending(x => x.CreatedAt),
+                     page: pagingModel.page,
+                     size: pagingModel.size
+             );
+
+            return response;
+        }
+
         private RatingDto BuildRating(ICollection<GuideRating> ratings)
         {
             if (ratings == null || !ratings.Any())

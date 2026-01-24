@@ -12,6 +12,7 @@ namespace Origami.API.Services.Interfaces
         Task<bool> UpdateGuideInfo(int id, GuideInfo request);
         Task<IPaginate<GetGuideResponse>> ViewAllGuide(GuideFilter filter, PagingModel pagingModel);
         Task<IPaginate<GetGuideCardResponse>> ViewAllGuideCard(GuideCardFilter filter, PagingModel pagingModel);
+        Task<IPaginate<GetGuideCardResponse>> ViewMyGuideCards(PagingModel pagingModel);
         Task IncreaseView(int id);
         Task<int> CreateGuideAsync(GuideSaveRequest request);
         Task<int> AddPromoPhotoAsync(int guideId, AddPromoPhotoRequest request);
