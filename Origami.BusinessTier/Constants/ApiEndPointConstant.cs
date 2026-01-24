@@ -92,6 +92,7 @@ namespace Origami.BusinessTier.Constants
             public const string GuidePromoPhotoEndPoint = GuideEndPoint + "/promo-photos";
             public const string GuidePromoPhotoUpdateEndPoint = GuidePromoPhotoEndPoint + "/{photoId}";
             public const string GuidePurchaseEndPoint = GuideEndPoint + "/purchase";
+            public const string GuideCommentsEndPoint = GuideEndPoint + "/comments";
         }
 
         //Auth

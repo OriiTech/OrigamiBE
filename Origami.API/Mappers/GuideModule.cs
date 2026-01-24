@@ -23,6 +23,7 @@ namespace Origami.API.Mappers
             .ForMember(d => d.CreatorName, o => o.MapFrom(s => s.Author.Username))
             .ForMember(d => d.CreatorImage, o => o.MapFrom(s => s.Author.UserProfile.AvatarUrl))
             .ForMember(d => d.TotalViews, o => o.MapFrom(s => s.GuideViews.Count))
+            .ForMember(d => d.TotalComments, o => o.MapFrom(s => s.Comments.Count))
             .ForMember(d => d.Rating,
                 o => o.MapFrom(s =>
                     s.GuideRatings.Any()

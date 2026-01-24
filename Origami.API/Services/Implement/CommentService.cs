@@ -20,12 +20,13 @@ namespace Origami.API.Services.Implement
         }
         public async Task<int> CreateComment(CommentInfo request)
         {
+            int userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
             var repo = _unitOfWork.GetRepository<Comment>();
 
             var comment = new Comment
             {
                 GuideId = request.GuideId,
-                UserId = request.UserId,
+                UserId = userId, // Use userId from token instead of request
                 Content = request.Content,
                 CreatedAt = DateTime.UtcNow,
                 ParentId = request.ParentId

@@ -496,6 +496,7 @@ namespace Origami.API.Services.Implement
                      .Include(x => x.Categories)
                      .Include(x => x.GuideViews)
                      .Include(x => x.GuideRatings)
+                     .Include(x => x.Comments)
                      .Include(x => x.GuidePromoPhotos),
                      orderBy: orderBy,
                      page: pagingModel.page,
@@ -530,6 +531,7 @@ namespace Origami.API.Services.Implement
                      .Include(x => x.Categories)
                      .Include(x => x.GuideViews)
                      .Include(x => x.GuideRatings)
+                     .Include(x => x.Comments)
                      .Include(x => x.GuidePromoPhotos),
                      orderBy: q => q.OrderByDescending(x => x.CreatedAt),
                      page: pagingModel.page,
@@ -591,6 +593,7 @@ namespace Origami.API.Services.Implement
                      .Include(x => x.Categories)
                      .Include(x => x.GuideViews)
                      .Include(x => x.GuideRatings)
+                     .Include(x => x.Comments)
                      .Include(x => x.GuidePromoPhotos),
                 orderBy: q => q.OrderByDescending(x => x.CreatedAt),
                 asNoTracking: true
@@ -658,6 +661,7 @@ namespace Origami.API.Services.Implement
                      .Include(x => x.Categories)
                      .Include(x => x.GuideViews)
                      .Include(x => x.GuideRatings)
+                     .Include(x => x.Comments)
                      .Include(x => x.GuidePromoPhotos),
                      orderBy: q => q.OrderByDescending(x => x.CreatedAt),
                      page: pagingModel.page,

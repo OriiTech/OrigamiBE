@@ -1766,7 +1766,7 @@ public partial class OrigamiDbContext : DbContext
                     .HasColumnName("created_at");
                 entity.Property(e => e.DisplayName)
                     .HasMaxLength(255)
-                    .HasColumnType("nvarchar(255)") // Hỗ trợ Unicode cho tiếng Việt
+                    .HasColumnType("nvarchar(255)")
                     .HasColumnName("display_name");
 
                 entity.HasOne(d => d.User).WithOne(p => p.UserProfile)

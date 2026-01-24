@@ -18,6 +18,7 @@ namespace Origami.BusinessTier.Payload.Guide
 
         public int TotalViews { get; set; }
         public double Rating { get; set; }
+        public int TotalComments { get; set; }
 
         public decimal? Price { get; set; }
         public bool PaidOnly { get; set; }

@@ -9,7 +9,6 @@ namespace Origami.BusinessTier.Payload.Comment
     public class CommentInfo
     {
         public int GuideId { get; set; }
-        public int UserId { get; set; }
         public string? Content { get; set; }
         public int? ParentId { get; set; }
     }
