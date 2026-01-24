@@ -136,5 +136,80 @@ namespace Origami.API.Controllers
             }
         }
 
+        [Authorize(Roles = RoleConstants.User)]
+        [HttpPut(ApiEndPointConstant.Guide.GuidePromoPhotoUpdateEndPoint)]
+        [Consumes("multipart/form-data")]
+        [RequestSizeLimit(10 * 1024 * 1024)] // 10MB limit
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> UpdatePromoPhoto(int id, int photoId, [FromForm] UpdatePromoPhotoRequest request)
+        {
+            try
+            {
+                if (request == null)
+                {
+                    _logger.LogWarning("UpdatePromoPhoto: Request body is null");
+                    return BadRequest(new { message = "Request body is required" });
+                }
+
+                _logger.LogInformation($"UpdatePromoPhoto: Processing request for guide {id}, photo {photoId}");
+                var isSuccessful = await _guideService.UpdatePromoPhotoAsync(id, photoId, request);
+                if (!isSuccessful)
+                {
+                    return BadRequest(new { message = "Failed to update promo photo" });
+                }
+                _logger.LogInformation($"UpdatePromoPhoto: Successfully updated promo photo {photoId} for guide {id}");
+                return Ok(new { message = "Promo photo updated successfully" });
+            }
+            catch (BadHttpRequestException ex)
+            {
+                _logger.LogWarning($"UpdatePromoPhoto: BadRequest - {ex.Message}");
+                if (ex.Message.Contains("permission") || ex.Message.Contains("Unauthorized"))
+                {
+                    return StatusCode(403, new { message = ex.Message });
+                }
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"UpdatePromoPhoto: Error updating promo photo {photoId} for guide {id}");
+                return StatusCode(500, new { message = "An error occurred while updating promo photo", error = ex.Message });
+            }
+        }
+
+        [Authorize(Roles = RoleConstants.User)]
+        [HttpPost(ApiEndPointConstant.Guide.GuidePurchaseEndPoint)]
+        [ProducesResponseType(typeof(PaymentGuideResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> PurchaseGuide(int id, [FromBody] PaymentGuideRequest request)
+        {
+            try
+            {
+                if (request == null)
+                {
+                    return BadRequest(new { message = "Request body is required" });
+                }
+
+                // Set guideId from route parameter
+                request.GuideId = id;
+
+                _logger.LogInformation($"PurchaseGuide: Processing purchase request for guide {id}");
+                var response = await _guideService.PurchaseGuideAsync(request);
+                return Ok(response);
+            }
+            catch (BadHttpRequestException ex)
+            {
+                _logger.LogWarning($"PurchaseGuide: BadRequest - {ex.Message}");
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"PurchaseGuide: Error processing purchase for guide {request?.GuideId}");
+                return StatusCode(500, new { message = "An error occurred while processing payment", error = ex.Message });
+            }
+        }
+
     }
 }

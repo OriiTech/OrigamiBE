@@ -738,5 +738,223 @@ namespace Origami.API.Services.Implement
             return promoPhoto.PhotoId;
         }
 
+        public async Task<bool> UpdatePromoPhotoAsync(int guideId, int photoId, UpdatePromoPhotoRequest request)
+        {
+            // Check if user is authenticated
+            int userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
+            _logger.LogInformation($"UpdatePromoPhotoAsync: User {userId} attempting to update promo photo {photoId} for guide {guideId}");
+
+            var guideRepo = _unitOfWork.GetRepository<Guide>();
+            var guide = await guideRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.GuideId == guideId,
+                asNoTracking: false
+            );
+
+            if (guide == null)
+            {
+                _logger.LogWarning($"UpdatePromoPhotoAsync: Guide {guideId} not found");
+                throw new BadHttpRequestException("Guide not found");
+            }
+
+            // Check if user is the author
+            if (guide.AuthorId != userId)
+            {
+                _logger.LogWarning($"UpdatePromoPhotoAsync: User {userId} is not the author (AuthorId={guide.AuthorId}) of guide {guideId}");
+                throw new BadHttpRequestException("You don't have permission to update promo photo for this guide");
+            }
+
+            var promoRepo = _unitOfWork.GetRepository<GuidePromoPhoto>();
+            var promoPhoto = await promoRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.PhotoId == photoId && x.GuideId == guideId,
+                asNoTracking: false
+            );
+
+            if (promoPhoto == null)
+            {
+                _logger.LogWarning($"UpdatePromoPhotoAsync: Promo photo {photoId} not found for guide {guideId}");
+                throw new BadHttpRequestException("Promo photo not found");
+            }
+
+            // Update photo file if provided
+            if (request.PhotoFile != null && request.PhotoFile.Length > 0)
+            {
+                // Validate file type (chỉ cho phép image)
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+                var fileExtension = Path.GetExtension(request.PhotoFile.FileName).ToLowerInvariant();
+                
+                if (!allowedExtensions.Contains(fileExtension))
+                {
+                    throw new BadHttpRequestException("Only image files are allowed (jpg, jpeg, png, gif, webp)");
+                }
+
+                // Validate file size (max 5MB)
+                const long maxFileSize = 5 * 1024 * 1024; // 5MB
+                if (request.PhotoFile.Length > maxFileSize)
+                {
+                    throw new BadHttpRequestException("File size must be less than 5MB");
+                }
+
+                // Upload new file lên Firebase Storage
+                var uploadedUrl = await _uploadService.UploadAsync(request.PhotoFile, "guide-promo-photos");
+                promoPhoto.Url = uploadedUrl;
+                _logger.LogInformation($"UpdatePromoPhotoAsync: New photo uploaded for promo photo {photoId}: {uploadedUrl}");
+            }
+
+            // Update display order if provided
+            if (request.DisplayOrder.HasValue)
+            {
+                promoPhoto.DisplayOrder = request.DisplayOrder.Value;
+            }
+
+            await _unitOfWork.CommitAsync();
+            _logger.LogInformation($"UpdatePromoPhotoAsync: Successfully updated promo photo {photoId} for guide {guideId}");
+
+            return true;
+        }
+
+        public async Task<PaymentGuideResponse> PurchaseGuideAsync(PaymentGuideRequest request)
+        {
+            int buyerId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
+            _logger.LogInformation($"PurchaseGuideAsync: User {buyerId} attempting to purchase guide {request.GuideId}");
+
+            var guideRepo = _unitOfWork.GetRepository<Guide>();
+            var guide = await guideRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.GuideId == request.GuideId,
+                asNoTracking: false
+            );
+
+            if (guide == null)
+            {
+                throw new BadHttpRequestException("Guide not found");
+            }
+
+            // Kiểm tra guide có phải paid_only không
+            if (!guide.PaidOnly || !guide.Price.HasValue || guide.Price.Value <= 0)
+            {
+                throw new BadHttpRequestException("This guide is not available for purchase");
+            }
+
+            // Kiểm tra user không phải là author
+            if (guide.AuthorId == buyerId)
+            {
+                throw new BadHttpRequestException("You cannot purchase your own guide");
+            }
+
+            var price = guide.Price.Value;
+
+            // Lấy wallet của buyer
+            var walletRepo = _unitOfWork.GetRepository<Wallet>();
+            var buyerWallet = await walletRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.UserId == buyerId,
+                asNoTracking: false
+            );
+
+            if (buyerWallet == null)
+            {
+                // Tạo wallet mới nếu chưa có
+                buyerWallet = new Wallet
+                {
+                    UserId = buyerId,
+                    Balance = 0,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                await walletRepo.InsertAsync(buyerWallet);
+                await _unitOfWork.CommitAsync();
+            }
+
+            // Kiểm tra số dư
+            if (buyerWallet.Balance == null || buyerWallet.Balance < price)
+            {
+                throw new BadHttpRequestException("Insufficient balance");
+            }
+
+            // Lấy wallet của author
+            var authorWallet = await walletRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.UserId == guide.AuthorId,
+                asNoTracking: false
+            );
+
+            if (authorWallet == null)
+            {
+                // Tạo wallet mới cho author nếu chưa có
+                authorWallet = new Wallet
+                {
+                    UserId = guide.AuthorId,
+                    Balance = 0,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                await walletRepo.InsertAsync(authorWallet);
+                await _unitOfWork.CommitAsync();
+            }
+
+            // Lấy wallet của admin (walletId 4, userId 22)
+            var adminWallet = await walletRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.WalletId == 4 && x.UserId == 22,
+                asNoTracking: false
+            );
+
+            if (adminWallet == null)
+            {
+                throw new BadHttpRequestException("Admin wallet not found");
+            }
+
+            // Tính toán số tiền
+            var authorAmount = price * 0.9m; // 90% cho author
+            var adminAmount = price * 0.1m; // 10% cho admin
+
+            // Trừ tiền từ buyer
+            buyerWallet.Balance = (buyerWallet.Balance ?? 0) - price;
+            buyerWallet.UpdatedAt = DateTime.UtcNow;
+
+            // Thêm tiền cho author
+            authorWallet.Balance = (authorWallet.Balance ?? 0) + authorAmount;
+            authorWallet.UpdatedAt = DateTime.UtcNow;
+
+            // Thêm tiền cho admin
+            adminWallet.Balance = (adminWallet.Balance ?? 0) + adminAmount;
+            adminWallet.UpdatedAt = DateTime.UtcNow;
+
+            // Tạo transactions
+            var transactionRepo = _unitOfWork.GetRepository<Transaction>();
+            var now = DateTime.UtcNow;
+
+            // Transaction từ buyer đến author (90%)
+            var transactionToAuthor = new Transaction
+            {
+                SenderWalletId = buyerWallet.WalletId,
+                ReceiverWalletId = authorWallet.WalletId,
+                Amount = authorAmount,
+                TransactionType = "Payment",
+                Status = "Success",
+                CreatedAt = now
+            };
+            await transactionRepo.InsertAsync(transactionToAuthor);
+
+            // Transaction từ buyer đến admin (10%)
+            var transactionToAdmin = new Transaction
+            {
+                SenderWalletId = buyerWallet.WalletId,
+                ReceiverWalletId = adminWallet.WalletId,
+                Amount = adminAmount,
+                TransactionType = "Payment",
+                Status = "Success",
+                CreatedAt = now
+            };
+            await transactionRepo.InsertAsync(transactionToAdmin);
+
+            await _unitOfWork.CommitAsync();
+
+            _logger.LogInformation($"PurchaseGuideAsync: Successfully processed payment. Buyer: {buyerId}, Guide: {request.GuideId}, Amount: {price}, Author: {authorAmount}, Admin: {adminAmount}");
+
+            return new PaymentGuideResponse
+            {
+                Success = true,
+                Message = "Payment successful",
+                TransactionId = transactionToAuthor.TransactionId
+            };
+        }
+
     }
 }

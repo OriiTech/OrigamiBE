@@ -17,5 +17,7 @@ namespace Origami.API.Services.Interfaces
         Task IncreaseView(int id);
         Task<int> CreateGuideAsync(GuideSaveRequest request);
         Task<int> AddPromoPhotoAsync(int guideId, AddPromoPhotoRequest request);
+        Task<bool> UpdatePromoPhotoAsync(int guideId, int photoId, UpdatePromoPhotoRequest request);
+        Task<PaymentGuideResponse> PurchaseGuideAsync(PaymentGuideRequest request);
     }
 }
