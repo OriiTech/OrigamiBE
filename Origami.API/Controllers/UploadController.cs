@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
@@ -37,20 +37,24 @@ namespace Origami.API.Controllers
                 return BadRequest(new { message = "File is required" });
             }
 
-            // Validate file type (chỉ cho phép image)
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            // Validate file type (image + video)
+            var imageExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            var videoExtensions = new[] { ".mp4", ".mov", ".webm" };
+            var allowedExtensions = imageExtensions.Concat(videoExtensions).ToArray();
             var fileExtension = Path.GetExtension(request.File.FileName).ToLowerInvariant();
             
             if (!allowedExtensions.Contains(fileExtension))
             {
-                return BadRequest(new { message = "Only image files are allowed (jpg, jpeg, png, gif, webp)" });
+                return BadRequest(new { message = "Chỉ chấp nhận ảnh (jpg, png, gif, webp) hoặc video (mp4, mov, webm)" });
             }
 
-            // Validate file size (max 5MB)
-            const long maxFileSize = 5 * 1024 * 1024; // 5MB
+            // Validate file size: ảnh max 5MB, video max 50MB
+            var maxFileSize = videoExtensions.Contains(fileExtension)
+                ? 50L * 1024 * 1024   // 50MB cho video
+                : 5L * 1024 * 1024;  // 5MB cho ảnh
             if (request.File.Length > maxFileSize)
             {
-                return BadRequest(new { message = "File size must be less than 5MB" });
+                return BadRequest(new { message = $"Kích thước file tối đa: {(maxFileSize / (1024 * 1024))}MB" });
             }
 
             try
