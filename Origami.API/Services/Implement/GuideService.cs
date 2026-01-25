@@ -264,6 +264,171 @@ namespace Origami.API.Services.Implement
             return guide.GuideId;
         }
 
+        public async Task<bool> UpdateGuideAsync(int id, GuideSaveRequest request)
+        {
+            int userId = GetCurrentUserId() ?? throw new BadHttpRequestException("Unauthorized");
+
+            var guideRepo = _unitOfWork.GetRepository<Guide>();
+            var stepRepo = _unitOfWork.GetRepository<Step>();
+            var stepTipRepo = _unitOfWork.GetRepository<StepTip>();
+            var categoryRepo = _unitOfWork.GetRepository<Category>();
+            var promoRepo = _unitOfWork.GetRepository<GuidePromoPhoto>();
+            var previewRepo = _unitOfWork.GetRepository<GuidePreview>();
+            var requirementRepo = _unitOfWork.GetRepository<GuideRequirement>();
+            var origamiRepo = _unitOfWork.GetRepository<DataTier.Models.Origami>();
+
+            var guide = await guideRepo.GetFirstOrDefaultAsync(
+                predicate: x => x.GuideId == id,
+                include: q => q
+                    .Include(x => x.Categories)
+                    .Include(x => x.GuidePreview)
+                    .Include(x => x.GuidePromoPhotos)
+                    .Include(x => x.Steps).ThenInclude(s => s.StepTips)
+                    .Include(x => x.GuideRequirement),
+                asNoTracking: false
+            ) ?? throw new BadHttpRequestException("GuideNotFound");
+
+            if (guide.AuthorId != userId)
+                throw new BadHttpRequestException("You don't have permission to update this guide");
+
+            int? resolvedOrigamiId = request.OrigamiId;
+            if (resolvedOrigamiId == null && request.OrigamiNew != null && !string.IsNullOrWhiteSpace(request.OrigamiNew.Name))
+            {
+                var newOrigami = new DataTier.Models.Origami
+                {
+                    Name = request.OrigamiNew.Name.Trim(),
+                    Description = request.OrigamiNew.Description,
+                    ImageUrl = request.OrigamiNew.ImageUrl,
+                    CreatedBy = userId,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await origamiRepo.InsertAsync(newOrigami);
+                await _unitOfWork.CommitAsync();
+                resolvedOrigamiId = newOrigami.OrigamiId;
+            }
+
+            if (request.Title != guide.Title && await guideRepo.AnyAsync(x => x.Title == request.Title))
+                throw new BadHttpRequestException("GuideTitleAlreadyExists");
+
+            guide.Title = request.Title;
+            guide.Subtitle = request.Subtitle;
+            guide.Description = request.Description;
+            guide.OrigamiId = resolvedOrigamiId;
+            guide.Price = request.Price?.Amount ?? 0;
+            guide.PaidOnly = request.Price?.PaidOnly ?? false;
+            guide.UpdatedAt = DateTime.UtcNow;
+
+            var categoryNames = new List<string>();
+            if (!string.IsNullOrWhiteSpace(request.Level)) categoryNames.Add(request.Level.Trim());
+            if (request.Category != null) categoryNames.AddRange(request.Category.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()));
+            guide.Categories.Clear();
+            if (categoryNames.Any())
+            {
+                var categories = await categoryRepo.GetListAsync(
+                    predicate: x => x.CategoryName != null && categoryNames.Contains(x.CategoryName));
+                foreach (var c in categories)
+                    guide.Categories.Add(c);
+            }
+
+            if (guide.GuidePreview != null)
+            {
+                previewRepo.Delete(guide.GuidePreview);
+                guide.GuidePreview = null;
+            }
+            if (request.ProductPreview != null)
+            {
+                bool hasVideo = request.ProductPreview.VideoAvailable && !string.IsNullOrEmpty(request.ProductPreview.VideoUrl);
+                if (hasVideo)
+                {
+                    await previewRepo.InsertAsync(new GuidePreview
+                    {
+                        GuideId = guide.GuideId,
+                        VideoAvailable = true,
+                        VideoUrl = request.ProductPreview.VideoUrl
+                    });
+                }
+
+                foreach (var p in guide.GuidePromoPhotos.ToList())
+                    promoRepo.Delete(p);
+                foreach (var photo in request.ProductPreview.PromoPhotos ?? Enumerable.Empty<PromoPhotoDto>())
+                {
+                    await promoRepo.InsertAsync(new GuidePromoPhoto
+                    {
+                        GuideId = guide.GuideId,
+                        Url = photo.Url,
+                        DisplayOrder = photo.Order
+                    });
+                }
+            }
+            else
+            {
+                foreach (var p in guide.GuidePromoPhotos.ToList())
+                    promoRepo.Delete(p);
+            }
+
+            foreach (var step in guide.Steps.ToList())
+            {
+                foreach (var tip in step.StepTips.ToList())
+                    stepTipRepo.Delete(tip);
+                stepRepo.Delete(step);
+            }
+            var stepList = new List<Step>();
+            foreach (var stepDto in request.Steps.OrderBy(x => x.Order))
+            {
+                string? imageUrl = stepDto.Medias?.FirstOrDefault(m => m.Type == 1)?.Url;
+                string? videoUrl = stepDto.Medias?.FirstOrDefault(m => m.Type == 2)?.Url;
+                var step = new Step
+                {
+                    GuideId = guide.GuideId,
+                    StepNumber = stepDto.Order,
+                    Title = stepDto.Title,
+                    Description = stepDto.Description,
+                    ImageUrl = imageUrl,
+                    VideoUrl = videoUrl,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await stepRepo.InsertAsync(step);
+                stepList.Add(step);
+            }
+            await _unitOfWork.CommitAsync();
+
+            var stepsOrdered = stepList.OrderBy(s => s.StepNumber).ToList();
+            var stepsDtoOrdered = request.Steps.OrderBy(x => x.Order).ToList();
+            for (int i = 0; i < stepsOrdered.Count && i < stepsDtoOrdered.Count; i++)
+            {
+                var tips = stepsDtoOrdered[i].Tips ?? new List<string>();
+                for (int j = 0; j < tips.Count; j++)
+                {
+                    if (string.IsNullOrWhiteSpace(tips[j])) continue;
+                    await stepTipRepo.InsertAsync(new StepTip
+                    {
+                        StepId = stepsOrdered[i].StepId,
+                        DisplayOrder = j,
+                        Content = tips[j].Trim()
+                    });
+                }
+            }
+
+            if (guide.GuideRequirement != null)
+            {
+                requirementRepo.Delete(guide.GuideRequirement);
+                guide.GuideRequirement = null;
+            }
+            if (request.Requirements != null)
+            {
+                await requirementRepo.InsertAsync(new GuideRequirement
+                {
+                    GuideId = guide.GuideId,
+                    PaperType = request.Requirements.PaperType,
+                    PaperSize = request.Requirements.PaperSize,
+                    Colors = request.Requirements.Color != null && request.Requirements.Color.Any() ? string.Join("||", request.Requirements.Color) : null,
+                    Tools = request.Requirements.Tools != null && request.Requirements.Tools.Any() ? string.Join("||", request.Requirements.Tools) : null
+                });
+            }
+
+            return await _unitOfWork.CommitAsync() > 0;
+        }
+
         public async Task<GetGuideResponse> GetGuideById(int id)
         {
             Guide guide = await _unitOfWork.GetRepository<Guide>().GetFirstOrDefaultAsync(

@@ -1,4 +1,4 @@
-﻿using Origami.BusinessTier.Payload;
+using Origami.BusinessTier.Payload;
 using Origami.BusinessTier.Payload.Guide;
 using Origami.DataTier.Paginate;
 
@@ -10,6 +10,7 @@ namespace Origami.API.Services.Interfaces
         Task<GetGuideResponse> GetGuideById(int id);
         Task<GetGuideDetailResponse> GetGuideDetailById(int id);
         Task<bool> UpdateGuideInfo(int id, GuideInfo request);
+        Task<bool> UpdateGuideAsync(int id, GuideSaveRequest request);
         Task<IPaginate<GetGuideResponse>> ViewAllGuide(GuideFilter filter, PagingModel pagingModel);
         Task<IPaginate<GetGuideCardResponse>> ViewAllGuideCard(GuideCardFilter filter, PagingModel pagingModel);
         Task<IPaginate<GetGuideCardResponse>> ViewMyGuideCards(PagingModel pagingModel);

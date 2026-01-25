@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Origami.API.Services.Interfaces;
 using Origami.BusinessTier.Constants;
@@ -89,6 +89,16 @@ namespace Origami.API.Controllers
         {
             var id = await _guideService.CreateGuideAsync(request);     
             return Ok(new { guideId = id });
+        }
+
+        [Authorize(Roles = RoleConstants.User)]
+        [HttpPut(ApiEndPointConstant.Guide.GuideEndPoint)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> UpdateGuide(int id, [FromBody] GuideSaveRequest request)
+        {
+            var ok = await _guideService.UpdateGuideAsync(id, request);
+            return Ok(new { success = ok });
         }
 
         [Authorize(Roles = RoleConstants.User)]
