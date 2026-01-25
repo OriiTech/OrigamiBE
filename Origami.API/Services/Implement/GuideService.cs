@@ -451,6 +451,8 @@ namespace Origami.API.Services.Implement
                         .Include(x => x.GuideViews)
                         .Include(x => x.GuideRatings)
                         .Include(x => x.Favorites)
+                        .Include(x => x.GuidePromoPhotos)
+                        .Include(x => x.GuidePreview)
                         .Include(x => x.Steps).ThenInclude(s => s.StepTips)
                         .Include(x => x.GuideRequirement)
                         .Include(x => x.Origami)
